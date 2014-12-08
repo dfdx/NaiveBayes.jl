@@ -10,4 +10,6 @@ X = [1 2 5 2;
 y = [:a, :b, :a, :c]
 
 fit(m, X, y)
-@assert predict(X) == y
+@assert predict(m, X) == y
+
+println("All OK.")

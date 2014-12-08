@@ -7,7 +7,7 @@ export NBModel,
        predict,
        predict_proba
 
-require("nbtypes.jl")
+include("nbtypes.jl")
 include("core.jl")
 
 end

@@ -4,7 +4,7 @@ import StatsBase.predict
 
 
 function Base.show(io::IO, m::MultinomialNB)
-    print(io, "NBModel($(m.c_counts))")
+    print(io, "MultinomialNB($(m.c_counts))")
 end
 
 function logprob_c{C}(m::NBModel, c::C)
@@ -44,7 +44,8 @@ function fit{C, V<:Number}(m::NBModel, X::Matrix{V}, y::Vector{C})
 end
 
 # predict log probabilities for all classes
-function predict_logprobs{C, V<:Number}(m::NBModel{C}, x::Vector{V})
+function predict_logprobs{V<:Number}(m::NBModel, x::Vector{V})
+    C = eltype(m.c_counts)[1]
     logprobs = Dict{C, Float64}()
     for c in keys(m.c_counts)
         logprobs[c] = logprob_c(m, c) + logprob_x_given_c(m, x, c)
@@ -53,7 +54,8 @@ function predict_logprobs{C, V<:Number}(m::NBModel{C}, x::Vector{V})
 end
 
 # predict log probabilities for all classes
-function predict_logprobs{C, V<:Number}(m::NBModel{C}, X::Matrix{V})
+function predict_logprobs{V<:Number}(m::NBModel, X::Matrix{V})
+    C = eltype(m.c_counts)[1]
     logprobs_per_class = Dict{C, Vector{Float64}}()
     for c in keys(m.c_counts)
         logprobs_per_class[c] = logprob_c(m, c) + logprob_x_given_c(m, X, c)
@@ -63,7 +65,8 @@ function predict_logprobs{C, V<:Number}(m::NBModel{C}, X::Matrix{V})
 end
 
 
-function predict_proba{C, V<:Number}(m::NBModel{C}, X::Matrix{V})
+function predict_proba{V<:Number}(m::NBModel, X::Matrix{V})
+    C = eltype(m.c_counts)[1]
     classes, logprobs = predict_logprobs(m, X)
     predictions = Array((C, Float64), size(X, 2))
     for j=1:size(X, 2)
@@ -75,7 +78,6 @@ function predict_proba{C, V<:Number}(m::NBModel{C}, X::Matrix{V})
     return predictions
 end
 
-function predict{C, V<:Number}(m::NBModel{C}, X::Matrix{V})
-    return collect(keys(precict_proba(m, X)))
+function predict{V<:Number}(m::NBModel, X::Matrix{V})
+    return [k for (k,v) in predict_proba(m, X)]
 end
-
