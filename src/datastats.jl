@@ -41,8 +41,7 @@ function Base.cov(dstats::DataStats)
     @assert (dstats.n_obs >= 2) "At least 2 observations are requied"
     mu = mean(dstats)
     C = (dstats.cross_sums - dstats.n_obs * (mu*mu')) / (dstats.n_obs - 1)
-    # populate upper triangle
-    for j=1:length(dstats.x_sums), i=1:j C[i, j] = C[j, i] end
+    Base.LinAlg.copytri!(C, 'L')
     return C
 end
 
