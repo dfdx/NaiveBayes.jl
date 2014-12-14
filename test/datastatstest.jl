@@ -1,0 +1,19 @@
+
+include("../src/datastats.jl")
+
+# normal (variables on columns)
+X = rand(40, 5)
+ds = DataStats(5)
+updatestats(ds, X[1:20, :])
+updatestats(ds, X[21:end, :])
+
+@assert all((cov(X) - cov(ds)) .< 0.0001)
+
+# transposed (variables on rows)
+X = rand(40, 5)
+ds = DataStats(5, 2)
+updatestats(ds, X')
+
+@assert all((cov(X) - cov(ds)) .< 0.0001)
+
+println("All OK")
