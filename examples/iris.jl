@@ -17,7 +17,9 @@ idxs = randperm(n)
 train = idxs[1:k]
 test = idxs[k+1:end]
 
-model = MultinomialNB(unique(y), p, alpha=0)
+model = GaussianNB(unique(y), p)
 fit(model, X[:, train], y[train])
 
-accuracy = countnz(predict(model, X[:,test]) .== y[test])/countnz(test)
+accuracy = countnz(predict(model, X[:,test]) .== y[test]) / countnz(test)
+
+println("Accuracy: $accuracy")

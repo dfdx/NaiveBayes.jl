@@ -20,6 +20,7 @@ function Base.show(io::IO, dstats::DataStats)
           "n_obs=$(dstats.n_obs),obs_axis=$(dstats.obs_axis))")
 end
 
+
 # Collect data statistics.
 # This method may be called multiple times on different
 # data samples to collect aggregative statistics.
@@ -38,8 +39,8 @@ end
 
 function Base.cov(dstats::DataStats)
     @assert (dstats.n_obs >= 2) "At least 2 observations are requied"
-    m = mean(dstats)
-    C = (dstats.cross_sums - dstats.n_obs * (m*m')) / (dstats.n_obs - 1)
+    mu = mean(dstats)
+    C = (dstats.cross_sums - dstats.n_obs * (mu*mu')) / (dstats.n_obs - 1)
     # populate upper triangle
     for j=1:length(dstats.x_sums), i=1:j C[i, j] = C[j, i] end
     return C

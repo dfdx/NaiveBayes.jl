@@ -3,6 +3,7 @@ module NaiveBayes
 
 export NBModel,
        MultinomialNB,
+       GaussianNB,
        fit,
        predict,
        predict_proba
