@@ -48,7 +48,7 @@ type GaussianNB{C} <: NBModel
     dstats::DataStats                  # aggregative data statistics   
     x_counts::Dict{C, Vector{Number}}  # ?? count/sum of occurrences of each var
     x_totals::Vector{Number}           # ?? total occurrences of each var
-    n_obs::Int64                       # ?? total number of seen observations
+    n_obs::Int64                       # total number of seen observations
 end
 
 function GaussianNB{C}(classes::Vector{C}, n_vars::Int64; alpha=0)

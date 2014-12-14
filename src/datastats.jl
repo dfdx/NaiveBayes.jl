@@ -41,7 +41,7 @@ function Base.cov(dstats::DataStats)
     m = mean(dstats)
     C = (dstats.cross_sums - dstats.n_obs * (m*m')) / (dstats.n_obs - 1)
     # populate upper triangle
-    for j=1:5, i=1:j C[i, j] = C[j, i] end
+    for j=1:length(dstats.x_sums), i=1:j C[i, j] = C[j, i] end
     return C
 end
 
