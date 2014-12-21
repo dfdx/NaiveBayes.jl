@@ -31,5 +31,3 @@ function test_gaussian()
 end
 
 
-# println("All OK.")
-
