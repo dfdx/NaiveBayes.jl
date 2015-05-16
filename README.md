@@ -1,6 +1,8 @@
 NaiveBayes.jl
 =============
 
+[![Build Status](https://travis-ci.org/dfdx/NaiveBayes.jl.svg)](https://travis-ci.org/dfdx/NaiveBayes.jl)
+
 Naive Bayes classifier. Currently 2 types of NB are supported: 
 
  * **MultinomialNB** - assumes variables have multinomial distribution. Good e.g. for text classification. See `examples/nums.jl` for usage.
