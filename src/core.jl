@@ -19,9 +19,9 @@ function logprob_c{C}(m::NBModel, c::C)
     return m.c_counts[c] / m.n_obs
 end
 
-# predict log probabilities for all classes
+"""Predict log probabilities for all classes"""
 function predict_logprobs{V<:Number}(m::NBModel, x::Vector{V})
-    C = eltype(m.c_counts)[1]
+    C = eltype(keys(m.c_counts))
     logprobs = Dict{C, Float64}()
     for c in keys(m.c_counts)
         logprobs[c] = logprob_c(m, c) + logprob_x_given_c(m, x, c)
@@ -29,9 +29,9 @@ function predict_logprobs{V<:Number}(m::NBModel, x::Vector{V})
     return keys(logprobs), values(logprobs)
 end
 
-# predict log probabilities for all classes
+"""Predict log probabilities for all classes"""
 function predict_logprobs{V<:Number}(m::NBModel, X::Matrix{V})
-    C = eltype(m.c_counts)[1]
+    C = eltype(keys(m.c_counts))
     logprobs_per_class = Dict{C, Vector{Float64}}()
     for c in keys(m.c_counts)
         logprobs_per_class[c] = logprob_c(m, c) + logprob_x_given_c(m, X, c)
@@ -40,11 +40,11 @@ function predict_logprobs{V<:Number}(m::NBModel, X::Matrix{V})
             hcat(collect(values(logprobs_per_class))...)')
 end
 
-# preditct logprobs, return tuples of predicted class and its logprob
+"""Preditct logprobs, return tuples of predicted class and its logprob"""
 function predict_proba{V<:Number}(m::NBModel, X::Matrix{V})
-    C = eltype(m.c_counts)[1]
+    C = eltype(keys(m.c_counts))
     classes, logprobs = predict_logprobs(m, X)
-    predictions = Array((C, Float64), size(X, 2))
+    predictions = Array(Tuple{C, Float64}, size(X, 2))
     for j=1:size(X, 2)
         maxprob_idx = indmax(logprobs[:, j])
         c = classes[maxprob_idx]
@@ -75,7 +75,7 @@ function fit{C}(m::MultinomialNB, X::Matrix{Int64}, y::Vector{C})
     return m
 end
 
-# Calculate log P(x|C)
+"""Calculate log P(x|C)"""
 function logprob_x_given_c{C}(m::MultinomialNB, x::Vector{Int64}, c::C)
     x_priors_for_c = m.x_counts[c] ./ m.x_totals
     x_probs_given_c = x_priors_for_c .^ x
@@ -83,7 +83,7 @@ function logprob_x_given_c{C}(m::MultinomialNB, x::Vector{Int64}, c::C)
     return logprob
 end
 
-# Calculate log P(x|C)
+"""Calculate log P(x|C)"""
 function logprob_x_given_c{C}(m::MultinomialNB, X::Matrix{Int64}, c::C)
     x_priors_for_c = m.x_counts[c] ./ m.x_totals
     x_probs_given_c = x_priors_for_c .^ X
@@ -117,13 +117,13 @@ function fit{C}(m::GaussianNB, X::Matrix{Float64}, y::Vector{C})
 end
 
 
-# Calculate log P(x|C)
+"""Calculate log P(x|C)"""
 function logprob_x_given_c{C}(m::GaussianNB, x::Vector{Float64}, c::C)
     return logpdf(m.gaussians[c], x)
 end
 
 
-# Calculate log P(x|C)
+"""Calculate log P(x|C)"""
 function logprob_x_given_c{C}(m::GaussianNB, X::Matrix{Float64}, c::C)
     ## x_priors_for_c = m.x_counts[c] ./ m.x_totals
     ## x_probs_given_c = x_priors_for_c .^ x

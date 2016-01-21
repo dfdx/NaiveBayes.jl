@@ -31,3 +31,5 @@ function test_gaussian()
 end
 
 
+test_multinomial()
+test_gaussian()
