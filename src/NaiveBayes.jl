@@ -6,7 +6,8 @@ export NBModel,
        GaussianNB,
        fit,
        predict,
-       predict_proba
+       predict_proba,
+       predict_logprobs
 
 include("nbtypes.jl")
 include("core.jl")
