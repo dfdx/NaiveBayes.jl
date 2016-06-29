@@ -2,10 +2,10 @@
 using Base.BLAS
 
 # type for collecting data statistics incrementally
-type DataStats    
+type DataStats
     x_sums::Vector{Float64}      # sum(x_i)
     cross_sums::Matrix{Float64}  # sum(x_i'*x_i) (lower-triangular matrix)
-    n_obs::Uint64                # number of observations
+    n_obs::UInt64                # number of observations
     obs_axis::Int64              # observation axis, e.g. size(X, obs_axis)
                                  # should return number of observations
     function DataStats(n_vars, obs_axis=1)
@@ -44,5 +44,3 @@ function Base.cov(dstats::DataStats)
     Base.LinAlg.copytri!(C, 'L')
     return C
 end
-
-

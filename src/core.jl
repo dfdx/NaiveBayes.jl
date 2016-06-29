@@ -40,7 +40,7 @@ function predict_logprobs{V<:Number}(m::NBModel, X::Matrix{V})
             hcat(collect(values(logprobs_per_class))...)')
 end
 
-"""Preditct logprobs, return tuples of predicted class and its logprob"""
+"""Predict logprobs, return tuples of predicted class and its logprob"""
 function predict_proba{V<:Number}(m::NBModel, X::Matrix{V})
     C = eltype(keys(m.c_counts))
     classes, logprobs = predict_logprobs(m, X)
@@ -101,7 +101,7 @@ function fit{C}(m::GaussianNB, X::Matrix{Float64}, y::Vector{C})
     # m.gaussian = MvNormal(mean(m.dstats), cov(m.dstats))
     # m.n_obs = m.dstats.n_obs
     n_vars = size(X, 1)
-    for j=1:size(X, 2)        
+    for j=1:size(X, 2)
         c = y[j]
         m.c_counts[c] += 1
         updatestats(m.c_stats[c], reshape(X[:, j], n_vars, 1))
@@ -132,3 +132,110 @@ function logprob_x_given_c{C}(m::GaussianNB, X::Matrix{Float64}, c::C)
     return logpdf(m.gaussians[c], X)
 end
 
+#####################################
+#####  Kernel Naive Bayes       #####
+#####################################
+
+function fit{C}(m::KernelNB, X::Matrix, y::Vector{C})
+    ensure_data_size(X, y)
+    unique_classes = unique(y)
+    for j in 1:size(X, 1)
+        for class in unique_classes
+            inds = find(class .== y)
+            m.c_kdes[class][j] = InterpKDE(kde(vec(X[j, inds])), eps(Float64), InterpLinear)
+        end
+    end
+    return m
+end
+
+"""
+    sum_log_x_given_c!(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::KernelNB, X::Matrix, c)
+
+Updates input vector `class_prob` with the sum(log(P(x|C)))
+"""
+function sum_log_x_given_c!(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::KernelNB, X::Matrix, c)
+    for i in 1:size(X, 2)  # for each sample
+        for j in 1:size(X, 1)  # for each class
+            feature_prob[j] = pdf(m.c_kdes[c][j], X[j, i])
+        end
+        class_prob[i] = sum(log(feature_prob))
+    end
+end
+
+"""
+    sum_log_x_given_c(feature_prob::Vector{Float64}, m::KernelNB, X::Vector, c)
+
+Returns the class probability (sum(log(P(x|C))))
+"""
+function sum_log_x_given_c(feature_prob::Vector{Float64}, m::KernelNB, X::Vector, c)
+    for j in eachindex(X)
+        feature_prob[j] = pdf(m.c_kdes[c][j], X[j])
+    end
+    class_prob = sum(log(feature_prob))
+end
+
+"""
+    predict_logprobs(m::KernelNB, X)
+
+Return the log-probabilities for each column of X, where each row is the class
+"""
+function predict_logprobs{V<:Number}(m::KernelNB, X::Matrix{V})
+    log_probs_per_class = Dict{eltype(keys(m.c_kdes)), Vector{Float64}}()
+    feature_prob = Vector{Float64}(m.n_vars)
+    n_samples = size(X, 2)
+    for c in keys(m.c_kdes)
+        class_prob = Vector{Float64}(n_samples)
+        sum_log_x_given_c!(class_prob, feature_prob, m, X, c)
+        log_probs_per_class[c] = class_prob
+    end
+    return hcat(collect(values(log_probs_per_class))...)'
+end
+
+# Predict log-probabilities for a vector
+function predict_logprobs{V<:Number}(m::KernelNB, x::Vector{V})
+    logprobs = Dict{eltype(keys(m.c_kdes)), Float64}()
+    feature_prob = Vector{Float64}(m.n_vars)
+    for c in keys(m.c_kdes)
+        logprobs[c] = sum_log_x_given_c(feature_prob, m, x, c)
+    end
+    return collect(values(logprobs))
+end
+
+"""
+    predict_proba{V<:Number}(m::KernelNB, X::Matrix{V})
+
+Predict log-probabilities for the input column vectors.
+Returns tuples of predicted class and its log-probability estimate.
+"""
+function predict_proba{V<:Number}(m::KernelNB, X::Matrix{V})
+    logprobs = predict_logprobs(m, X)
+    classes = collect(keys(m.c_kdes))
+    n_samples = size(X, 2)
+    predictions = Array(Tuple{eltype(classes), Float64}, n_samples)
+    for i in 1:n_samples
+        maxprob_idx = indmax(logprobs[:, i])
+        c = classes[maxprob_idx]
+        logprob = logprobs[maxprob_idx, i]
+        predictions[i] = (c, logprob)
+    end
+    return predictions
+end
+
+"""
+    predict_proba(m::KernelNB, X::Vector) -> (class, probability)
+
+Return a tuple of predicted class and log-probability for a single test vector.
+"""
+function predict_proba{V<:Number}(m::KernelNB, X::Vector{V})
+    logprobs = predict_logprobs(m, X)
+    classes = collect(keys(m.c_kdes))
+    maxprob_idx = indmax(logprobs)
+    c = classes[maxprob_idx]
+    logprob = logprobs[maxprob_idx]
+    return (c, logprob)
+end
+
+# Predict kde naive bayes for each column of X
+function predict(m::KernelNB, X)
+   return [k for (k,v) in predict_proba(m, X)]
+end
