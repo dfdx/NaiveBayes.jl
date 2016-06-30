@@ -239,3 +239,9 @@ end
 function predict(m::KernelNB, X)
    return [k for (k,v) in predict_proba(m, X)]
 end
+
+# TODO remove this once KernelDensity.jl pull request #27 is merged/tagged.
+function KernelDensity.InterpKDE{IT<:Grid.InterpType}(k::UnivariateKDE, bc::Number, it::Type{IT}=InterpQuadratic)
+    g = CoordInterpGrid(k.x, k.density, bc, it)
+    InterpKDE(k, g)
+end
