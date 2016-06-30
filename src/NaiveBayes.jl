@@ -1,9 +1,13 @@
 
 module NaiveBayes
 
+using KernelDensity
+using Grid
+
 export NBModel,
        MultinomialNB,
        GaussianNB,
+       KernelNB,
        fit,
        predict,
        predict_proba,

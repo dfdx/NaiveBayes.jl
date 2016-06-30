@@ -1,7 +1,9 @@
 
 using NaiveBayes
 using RDatasets
+using StatsBase
 
+# Example 1
 iris = dataset("datasets", "iris")
 
 # observations in columns and variables in rows
@@ -21,5 +23,14 @@ model = GaussianNB(unique(y), p)
 fit(model, X[:, train], y[train])
 
 accuracy = countnz(predict(model, X[:,test]) .== y[test]) / countnz(test)
+println("Accuracy: $accuracy")
 
+# Example 2
+# 3 classes and 100 random data samples with 5 variables.
+n_obs = 100
+m = GaussianNB([:a, :b, :c], 5)
+X = randn(5, n_obs)
+y = sample([:a, :b, :c], n_obs)
+fit(m, X, y)
+accuracy = sum(predict(m, X) .== y) / n_obs
 println("Accuracy: $accuracy")
