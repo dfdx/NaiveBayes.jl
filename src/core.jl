@@ -16,7 +16,7 @@ end
 
 
 function logprob_c{C}(m::NBModel, c::C)
-    return m.c_counts[c] / m.n_obs
+    return log(m.c_counts[c] / m.n_obs)
 end
 
 """Predict log probabilities for all classes"""
