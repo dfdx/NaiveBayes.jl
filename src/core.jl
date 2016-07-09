@@ -1,8 +1,9 @@
 
 import StatsBase.fit
 import StatsBase.predict
+import StatsBase.span
 using Distributions
-
+using StatsBase
 
 ######################################
 #### common naive Bayes functions ####
@@ -13,7 +14,6 @@ function ensure_data_size(X, y)
             "Number of observations in X ($(size(X, 2))) is not equal to " *
             "number of class labels in y ($(length(y)))")
 end
-
 
 function logprob_c{C}(m::NBModel, c::C)
     return log(m.c_counts[c] / m.n_obs)
@@ -148,6 +148,26 @@ function fit{C}(m::KernelNB, X::Matrix, y::Vector{C})
     return m
 end
 
+
+function fit{C, T<: AbstractFloat, U<:Int}(model::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, labels::Vector{C})
+    for class in unique(labels)
+        @show class
+        inds = find(labels .== class)
+
+        for (j, feature) in enumerate(continiues_features)
+            model.c_kdes[class][j] = InterpKDE(kde(feature[inds]), eps(Float64), InterpLinear)
+        end
+
+        for (j, feature) in enumerate(discrete_features)
+            model.c_discrete[class][j] = ePDF(feature[inds])
+        end
+    end
+
+    return model
+end
+
+
+
 """
     sum_log_x_given_c!(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::KernelNB, X::Matrix, c)
 
@@ -155,12 +175,31 @@ Updates input vector `class_prob` with the sum(log(P(x|C)))
 """
 function sum_log_x_given_c!(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::KernelNB, X::Matrix, c)
     for i in 1:size(X, 2)  # for each sample
-        for j in 1:size(X, 1)  # for each class
+        for j in 1:size(X, 1)  # for each feature
             feature_prob[j] = pdf(m.c_kdes[c][j], X[j, i])
         end
         class_prob[i] = sum(log(feature_prob))
     end
 end
+
+
+function sum_log_x_given_c!{T <: AbstractFloat, U <: Int}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, c)
+    for i = 1:num_samples(m, continiues_features, discrete_features)
+        for j = 1:m.num_kdes
+            feature_prob[j] = pdf(m.c_kdes[c][j], continiues_features[j][i])
+        end
+        for j = 1:m.num_discrete
+            if discrete_features[j][i] in m.c_discrete[c][j].n
+                ind = find(m.c_discrete[c][j].n .== discrete_features[j][i])[1]
+                feature_prob[m.num_kdes+j] = m.c_discrete[c][j].probability[ind]
+            else
+                feature_prob[m.num_kdes+j] = eps()
+            end
+        end
+        class_prob[i] = sum(log(feature_prob))
+    end
+end
+
 
 """
     sum_log_x_given_c(feature_prob::Vector{Float64}, m::KernelNB, X::Vector, c)
@@ -173,6 +212,40 @@ function sum_log_x_given_c(feature_prob::Vector{Float64}, m::KernelNB, X::Vector
     end
     class_prob = sum(log(feature_prob))
 end
+
+
+
+function num_samples(m::HybridNB, continiues_features, discrete_features)
+    if m.num_kdes > m.num_discrete
+        n_samples = length(continiues_features[1])
+    else
+        n_samples = length(discrete_features[1])
+    end
+    return n_samples
+end
+
+"""
+    predict_logprobs(m::HybridNB, features_c::Vector{Vector{Float64}, features_d::Vector{Vector{Int})
+
+Return the log-probabilities for each column of X, where each row is the class
+"""
+function predict_logprobs{T <: AbstractFloat, U <: Int}(m::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+    @show "callsing predict_logprobs"
+    n_samples = num_samples(m, continiues_features, discrete_features)
+    @show n_samples
+    log_probs_per_class = Dict{eltype(keys(m.c_kdes)), Vector{Float64}}()
+    feature_prob = Vector{Float64}(m.num_kdes + m.num_discrete)
+    for c in keys(m.c_kdes)
+        @show "foo bar class $c"
+        class_prob = Vector{Float64}(n_samples) # is it better to have it outside the loop and fill! with 0 after asignment?
+        sum_log_x_given_c!(class_prob, feature_prob, m, continiues_features, discrete_features, c) # what is the use of feature_prob?
+        log_probs_per_class[c] = class_prob
+    end
+
+
+    return hcat(collect(values(log_probs_per_class))...)'
+end
+
 
 """
     predict_logprobs(m::KernelNB, X)
@@ -221,6 +294,29 @@ function predict_proba{V<:Number}(m::KernelNB, X::Matrix{V})
     return predictions
 end
 
+
+"""
+    predict_proba{V<:Number}(m::KernelNB, X::Matrix{V})
+
+Predict log-probabilities for the input column vectors.
+Returns tuples of predicted class and its log-probability estimate.
+"""
+function predict_proba{T <: AbstractFloat, U <: Int}(m::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+    @show "Calling predict_proba"
+    logprobs = predict_logprobs(m, continiues_features, discrete_features)
+    classes = collect(keys(m.c_kdes))
+    n_samples = num_samples(m, continiues_features, discrete_features)
+    predictions = Array(Tuple{eltype(classes), Float64}, n_samples)
+    for i = 1:n_samples
+        maxprob_idx = indmax(logprobs[:, i])
+        c = classes[maxprob_idx]
+        logprob = logprobs[maxprob_idx, i]
+        predictions[i] = (c, logprob)
+    end
+    return predictions
+end
+
+
 """
     predict_proba(m::KernelNB, X::Vector) -> (class, probability)
 
@@ -237,8 +333,24 @@ end
 
 # Predict kde naive bayes for each column of X
 function predict(m::KernelNB, X)
-   return [k for (k,v) in predict_proba(m, X)]
+    return [k for (k,v) in predict_proba(m, X)]
 end
+
+# This should replce the method above
+# function predict(m::KernelNB, X)
+#     continiues_features = Vector{Vector{Float64}}()
+#     for i in size(X, 1)
+#         push!(V, vec(X[i, :]))
+#     end
+#     return [k for (k,v) in predict_proba(m, continiues_features, Vector{Vector{Float64}}())]
+# end
+
+
+# Predict kde naive bayes for each column of X
+function predict{T <: AbstractFloat, U <: Int}(m::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+    return [k for (k,v) in predict_proba(m, continiues_features, discrete_features)]
+end
+
 
 # TODO remove this once KernelDensity.jl pull request #27 is merged/tagged.
 function KernelDensity.InterpKDE{IT<:Grid.InterpType}(k::UnivariateKDE, bc::Number, it::Type{IT}=InterpQuadratic)

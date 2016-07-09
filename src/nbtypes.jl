@@ -1,5 +1,6 @@
 
 using Distributions
+using StatsBase
 
 include("datastats.jl")
 
@@ -98,4 +99,51 @@ function Base.show(io::IO, m::KernelNB)
     println(io, "KernelNB")
     println(io, "  Classes = $(keys(m.c_kdes))")
     print(io, "  Number of variables = $(m.n_vars)")
+end
+
+#####################################
+#####  Hybrid Naive Bayes       #####
+#####################################
+
+type ePDF{R <: AbstractArray, T <: AbstractFloat}
+    n::R
+    probability::Vector{T}
+end
+
+function ePDF{T <: Int}(x::AbstractArray{T})
+    cnts = counts(x)
+    ρ = map(Float64, cnts)/sum(cnts)
+    ρ[ρ .< eps()] = eps()
+    return ePDF(StatsBase.span(x), ρ)
+end
+
+
+""" A Naive Bayes model for both continuoes and discrete features"""
+immutable HybridNB{C}
+    c_kdes::Dict{C, Vector{InterpKDE}}
+    num_kdes::Int
+    c_discrete::Dict{C, Vector{ePDF}}
+    num_discrete::Int # it would be nice to have the number of classes and the number of training examples for each class
+    class_prior::Vector{Float64}
+end
+
+
+function HybridNB{C, T <: Integer}(labels::Vector{C}, num_kdes::T, num_discrete::T)
+    c_kdes = Dict{C, Vector{InterpKDE}}()
+    c_discrete = Dict{C, Vector{ePDF}}()
+    classes = unique(labels)
+    priors = map(Float64, counts(labels))/length(labels)
+    for class in classes
+        c_kdes[class] = Vector{InterpKDE}(num_kdes)
+        c_discrete[class] = Vector{ePDF}(num_discrete)
+    end
+    HybridNB{C}(c_kdes, num_kdes, c_discrete, num_discrete, priors)
+end
+
+
+function Base.show(io::IO, m::HybridNB)
+    println(io, "HybridNB")
+    println(io, "  Classes = $(keys(m.c_kdes))")
+    println(io, "  Number of continiues features = $(m.num_kdes)")
+    println(io, "  Number of discrete features = $(m.num_discrete)")
 end
