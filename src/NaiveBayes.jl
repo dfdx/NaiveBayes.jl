@@ -19,6 +19,9 @@ export NBModel,
         to_matrix
 
 include("nbtypes.jl")
-include("core.jl")
+include("common.jl")
+include("hybrid.jl")
+include("gaussian.jl")
+include("multinomial.jl")
 
 end

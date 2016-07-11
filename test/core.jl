@@ -22,12 +22,6 @@
         @test predict(m, X) == y
     end
 
-    @testset "KDE NB" begin
-        m = KernelNB(y, 2)
-        fit(m, X, y)
-        @test predict(m, X) == y
-    end
-
     @testset "Hybrid NB" begin
 
         # a test to check that HybridNB successfully replaces KernelNB
