@@ -66,7 +66,7 @@
 
     @testset "restructure features" begin
         M = rand(3,4)
-        V = from_matrix(M)
+        V = restructure_matrix(M)
         Mp = to_matrix(V)
         @test all(M .== Mp)
     end

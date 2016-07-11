@@ -1,18 +1,15 @@
-
-import StatsBase.fit
-import StatsBase.predict
-import StatsBase.span
-using Distributions
-using StatsBase
-
 ######################################
 #### common naive Bayes functions ####
 ######################################
 
-""" convert a vector of vector into a matrix """
+"""
+    to_matrix(V::Vector{Vector}}) -> M::Matrix
+
+convert a vector of vector into a matrix
+"""
 function to_matrix{T <: Number}(V::Vector{Vector{T}})
     n_lines = length(V)
-    n_lines < 1  && throw("Empty vector")
+    n_lines < 1  && throw(ArgumentError("Empty input"))
     X = zeros(n_lines, length(V[1]))
     for i=1:n_lines
         X[i, :] = V[i]
@@ -20,8 +17,12 @@ function to_matrix{T <: Number}(V::Vector{Vector{T}})
     return X
 end
 
-""" convert a matrix to vector of vectors"""
-function from_matrix{T <: Number}(M::Matrix{T})
+"""
+    restructure_matrix(M::Matrix) -> V::Vector{Vector}
+
+Restructure a matrix as vector of vectors
+"""
+function restructure_matrix{T <: Number}(M::Matrix{T})
     d, n = size(M)
     V = Vector{Vector{eltype(M)}}(d)
     for i=1:d
@@ -161,7 +162,7 @@ end
 """
     fit(m::HybridNB, f_c::Vector{Vector{Float64}}, f_d::Vector{Vector{Int64}}, labels::Vector{Int64})
 
-Train NB model with discrete and continuous features
+Train NB model with discrete and continuous features by estimating P(x⃗|c)
 """
 function fit{C, T<: AbstractFloat, U<:Int}(model::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, labels::Vector{C})
     for class in model.classes
@@ -184,7 +185,7 @@ Train NB model with continuous features only
 """
 function fit{C, T<: AbstractFloat}(model::HybridNB, continuous_features::Matrix{T}, labels::Vector{C})
     discrete_features = Vector{Vector{Int64}}()
-    return fit(model, from_matrix(continuous_features), discrete_features, labels)
+    return fit(model, restructure_matrix(continuous_features), discrete_features, labels)
 end
 
 
@@ -258,7 +259,7 @@ end
     predict_logprobs(m::HybridNB, features_c::Vector{Vector{Float64}, features_d::Vector{Vector{Int})
 
 Return the log-probabilities for each column of X, where each row is the class
-"""#FIXME me
+"""
 function predict_logprobs{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
     n_samples = num_samples(m, continuous_features, discrete_features)
     log_probs_per_class = zeros(length(m.classes) ,n_samples)
@@ -266,7 +267,7 @@ function predict_logprobs{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_
     for (i, c) in enumerate(m.classes)
         class_prob = Vector{Float64}(n_samples)
         sum_log_x_given_c!(class_prob, feature_prob, m, continuous_features, discrete_features, c)
-        log_probs_per_class[i, :] = class_prob
+        log_probs_per_class[i, :] = class_prob .+ log(m.priors[c])
     end
     return log_probs_per_class
 end
@@ -365,7 +366,7 @@ end
 """ Predict kde naive bayes for continuos featuers only"""
 function predict{T <: Number}(m::HybridNB, X::Matrix{T})
     eltype(X) <: AbstractFloat || throw("Continuous features must be floats!")
-    return predict(m, from_matrix(X), Vector{Vector{Int}}())
+    return predict(m, restructure_matrix(X), Vector{Vector{Int}}())
 end
 
 """

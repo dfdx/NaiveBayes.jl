@@ -1,6 +1,5 @@
 
 using Distributions
-using StatsBase
 
 include("datastats.jl")
 
@@ -139,22 +138,34 @@ immutable HybridNB{C}
     c_discrete::Dict{C, Vector{ePDF}}
     num_discrete::Int # it would be nice to have the number of classes and the number of training examples for each class
     classes::Vector{C}
+    priors::Dict{C, Float64}
 end
 
-""" A constructor for both types of features """
+"""
+    HybridNB(labels::Vector{Int 64}, num_kdes::Int64, num_discrete::Int64) -> model_h
+
+A constructor for both types of features
+"""
 function HybridNB{C, T <: Integer}(labels::Vector{C}, num_kdes::T, num_discrete::T)
     c_kdes = Dict{C, Vector{InterpKDE}}()
     c_discrete = Dict{C, Vector{ePDF}}()
+    priors = Dict{C, Float64}()
     classes = unique(labels)
+    A = 1.0/float(length(labels))
     for class in classes
+        priors[class] = A*float(sum(labels .== class))
         c_kdes[class] = Vector{InterpKDE}(num_kdes)
         c_discrete[class] = Vector{ePDF}(num_discrete)
     end
-    HybridNB{C}(c_kdes, num_kdes, c_discrete, num_discrete, classes)
+    HybridNB{C}(c_kdes, num_kdes, c_discrete, num_discrete, classes, priors)
 end
 
 
-""" A constructor for continuous features only """
+"""
+    HybridNB(labels::Vector{Int 64}, num_kdes::Int) -> model_h
+
+A constructor for continuous features only
+"""
 function HybridNB{C, T <: Integer}(labels::Vector{C}, num_kdes::T)
     return HybridNB(labels, num_kdes, 0)
 end

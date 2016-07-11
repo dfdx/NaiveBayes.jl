@@ -1,8 +1,10 @@
 
 module NaiveBayes
 
+using Distributions
 using KernelDensity
 using Grid
+using StatsBase
 
 export NBModel,
         MultinomialNB,
@@ -13,7 +15,7 @@ export NBModel,
         predict,
         predict_proba,
         predict_logprobs,
-        from_matrix,
+        restructure_matrix,
         to_matrix
 
 include("nbtypes.jl")
