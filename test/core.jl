@@ -27,4 +27,47 @@
         fit(m, X, y)
         @test predict(m, X) == y
     end
+
+    @testset "Hybrid NB" begin
+
+        # a test to check that HybridNB successfully replaces KernelNB
+        m1 = HybridNB(y, 2)
+        fit(m1, X, y)
+        @test predict(m1, X) == y
+
+        N1 = 100000
+        N2 = 160000
+        Np = 1000
+
+        srand(0)
+
+        perm = randperm(N1+N2)
+        labels = [ones(Int, N1); zeros(Int, N2)][perm]
+        f_c1 = [0.35randn(N1); 3.0 + 0.2randn(N2)][perm]
+        f_c2 = [-4.0 + 0.35randn(N1); -3.0 + 0.2randn(N2)][perm]
+        f_d = [rand(1:10, N1); rand(12:25, N2)][perm]
+
+        training_c = Vector{Vector{Float64}}()
+        predict_c = Vector{Vector{Float64}}()
+        push!(training_c, f_c1[1:end-Np], f_c2[1:end-Np])
+        push!(predict_c, f_c1[end-Np:end], f_c2[end-Np:end])
+
+        training_d = Vector{Vector{Int}}()
+        predict_d = Vector{Vector{Int}}()
+        push!(training_d, f_d[1:end-Np])
+        push!(predict_d, f_d[end-Np:end])
+
+        model = HybridNB(labels[1:end-Np], length(training_c), length(training_d))
+        fit(model, training_c, training_d, labels[1:end-Np])
+        y_h = predict(model, predict_c, predict_d)
+        @test all(y_h .== labels[end-Np:end])
+
+    end
+
+    @testset "restructure features" begin
+        M = rand(3,4)
+        V = from_matrix(M)
+        Mp = to_matrix(V)
+        @test all(M .== Mp)
+    end
 end

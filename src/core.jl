@@ -9,6 +9,28 @@ using StatsBase
 #### common naive Bayes functions ####
 ######################################
 
+""" convert a vector of vector into a matrix """
+function to_matrix{T <: Number}(V::Vector{Vector{T}})
+    n_lines = length(V)
+    n_lines < 1  && throw("Empty vector")
+    X = zeros(n_lines, length(V[1]))
+    for i=1:n_lines
+        X[i, :] = V[i]
+    end
+    return X
+end
+
+""" convert a matrix to vector of vectors"""
+function from_matrix{T <: Number}(M::Matrix{T})
+    d, n = size(M)
+    V = Vector{Vector{eltype(M)}}(d)
+    for i=1:d
+        V[i] = vec(M[i, :])
+    end
+    return V
+end
+
+
 function ensure_data_size(X, y)
     @assert(size(X, 2) == length(y),
             "Number of observations in X ($(size(X, 2))) is not equal to " *
@@ -136,7 +158,38 @@ end
 #####  Kernel Naive Bayes       #####
 #####################################
 
+"""
+    fit(m::HybridNB, f_c::Vector{Vector{Float64}}, f_d::Vector{Vector{Int64}}, labels::Vector{Int64})
+
+Train NB model with discrete and continuous features
+"""
+function fit{C, T<: AbstractFloat, U<:Int}(model::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, labels::Vector{C})
+    for class in model.classes
+        inds = find(labels .== class)
+        for (j, feature) in enumerate(continuous_features)
+            model.c_kdes[class][j] = InterpKDE(kde(feature[inds]), eps(Float64), InterpLinear)
+        end
+        for (j, feature) in enumerate(discrete_features)
+            model.c_discrete[class][j] = ePDF(feature[inds])
+        end
+    end
+    return model
+end
+
+
+"""
+    fit(m::HybridNB, f_c::Matrix{Float64}, labels::Vector{Int64})
+
+Train NB model with continuous features only
+"""
+function fit{C, T<: AbstractFloat}(model::HybridNB, continuous_features::Matrix{T}, labels::Vector{C})
+    discrete_features = Vector{Vector{Int64}}()
+    return fit(model, from_matrix(continuous_features), discrete_features, labels)
+end
+
+
 function fit{C}(m::KernelNB, X::Matrix, y::Vector{C})
+    warn("fit method for KernelNB is deprecated. Use HybridNB instead.")
     ensure_data_size(X, y)
     unique_classes = unique(y)
     for j in 1:size(X, 1)
@@ -149,31 +202,12 @@ function fit{C}(m::KernelNB, X::Matrix, y::Vector{C})
 end
 
 
-function fit{C, T<: AbstractFloat, U<:Int}(model::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, labels::Vector{C})
-    for class in unique(labels)
-        @show class
-        inds = find(labels .== class)
-
-        for (j, feature) in enumerate(continiues_features)
-            model.c_kdes[class][j] = InterpKDE(kde(feature[inds]), eps(Float64), InterpLinear)
-        end
-
-        for (j, feature) in enumerate(discrete_features)
-            model.c_discrete[class][j] = ePDF(feature[inds])
-        end
-    end
-
-    return model
-end
-
-
-
 """
     sum_log_x_given_c!(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::KernelNB, X::Matrix, c)
 
 Updates input vector `class_prob` with the sum(log(P(x|C)))
 """
-function sum_log_x_given_c!(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::KernelNB, X::Matrix, c)
+function sum_log_x_given_c!(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::KernelNB, X::Matrix, c)# TODO: depricate
     for i in 1:size(X, 2)  # for each sample
         for j in 1:size(X, 1)  # for each feature
             feature_prob[j] = pdf(m.c_kdes[c][j], X[j, i])
@@ -183,18 +217,14 @@ function sum_log_x_given_c!(class_prob::Vector{Float64}, feature_prob::Vector{Fl
 end
 
 
-function sum_log_x_given_c!{T <: AbstractFloat, U <: Int}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, c)
-    for i = 1:num_samples(m, continiues_features, discrete_features)
+"""computes log[P(x⃗ⁿ|c)] ≈ ∑ᵢ log[p(xⁿᵢ|c)] """
+function sum_log_x_given_c!{T <: AbstractFloat, U <: Int}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, c)
+    for i = 1:num_samples(m, continuous_features, discrete_features)
         for j = 1:m.num_kdes
-            feature_prob[j] = pdf(m.c_kdes[c][j], continiues_features[j][i])
+            feature_prob[j] = pdf(m.c_kdes[c][j], continuous_features[j][i])
         end
         for j = 1:m.num_discrete
-            if discrete_features[j][i] in m.c_discrete[c][j].n
-                ind = find(m.c_discrete[c][j].n .== discrete_features[j][i])[1]
-                feature_prob[m.num_kdes+j] = m.c_discrete[c][j].probability[ind]
-            else
-                feature_prob[m.num_kdes+j] = eps()
-            end
+            feature_prob[m.num_kdes+j] = probability(m.c_discrete[c][j], discrete_features[j][i])
         end
         class_prob[i] = sum(log(feature_prob))
     end
@@ -206,7 +236,7 @@ end
 
 Returns the class probability (sum(log(P(x|C))))
 """
-function sum_log_x_given_c(feature_prob::Vector{Float64}, m::KernelNB, X::Vector, c)
+function sum_log_x_given_c(feature_prob::Vector{Float64}, m::KernelNB, X::Vector, c) # TODO: depricate
     for j in eachindex(X)
         feature_prob[j] = pdf(m.c_kdes[c][j], X[j])
     end
@@ -214,10 +244,10 @@ function sum_log_x_given_c(feature_prob::Vector{Float64}, m::KernelNB, X::Vector
 end
 
 
-
-function num_samples(m::HybridNB, continiues_features, discrete_features)
+""" compute the number of samples """
+function num_samples{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}) # TODO: this is a bit strange
     if m.num_kdes > m.num_discrete
-        n_samples = length(continiues_features[1])
+        n_samples = length(continuous_features[1])
     else
         n_samples = length(discrete_features[1])
     end
@@ -228,22 +258,17 @@ end
     predict_logprobs(m::HybridNB, features_c::Vector{Vector{Float64}, features_d::Vector{Vector{Int})
 
 Return the log-probabilities for each column of X, where each row is the class
-"""
-function predict_logprobs{T <: AbstractFloat, U <: Int}(m::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
-    @show "callsing predict_logprobs"
-    n_samples = num_samples(m, continiues_features, discrete_features)
-    @show n_samples
-    log_probs_per_class = Dict{eltype(keys(m.c_kdes)), Vector{Float64}}()
+"""#FIXME me
+function predict_logprobs{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+    n_samples = num_samples(m, continuous_features, discrete_features)
+    log_probs_per_class = zeros(length(m.classes) ,n_samples)
     feature_prob = Vector{Float64}(m.num_kdes + m.num_discrete)
-    for c in keys(m.c_kdes)
-        @show "foo bar class $c"
-        class_prob = Vector{Float64}(n_samples) # is it better to have it outside the loop and fill! with 0 after asignment?
-        sum_log_x_given_c!(class_prob, feature_prob, m, continiues_features, discrete_features, c) # what is the use of feature_prob?
-        log_probs_per_class[c] = class_prob
+    for (i, c) in enumerate(m.classes)
+        class_prob = Vector{Float64}(n_samples)
+        sum_log_x_given_c!(class_prob, feature_prob, m, continuous_features, discrete_features, c)
+        log_probs_per_class[i, :] = class_prob
     end
-
-
-    return hcat(collect(values(log_probs_per_class))...)'
+    return log_probs_per_class
 end
 
 
@@ -253,6 +278,7 @@ end
 Return the log-probabilities for each column of X, where each row is the class
 """
 function predict_logprobs{V<:Number}(m::KernelNB, X::Matrix{V})
+    warn("method predict_logprobs for KernelNB is depricated")
     log_probs_per_class = Dict{eltype(keys(m.c_kdes)), Vector{Float64}}()
     feature_prob = Vector{Float64}(m.n_vars)
     n_samples = size(X, 2)
@@ -265,7 +291,7 @@ function predict_logprobs{V<:Number}(m::KernelNB, X::Matrix{V})
 end
 
 # Predict log-probabilities for a vector
-function predict_logprobs{V<:Number}(m::KernelNB, x::Vector{V})
+function predict_logprobs{V<:Number}(m::KernelNB, x::Vector{V}) #TODO: is that really nedded?
     logprobs = Dict{eltype(keys(m.c_kdes)), Float64}()
     feature_prob = Vector{Float64}(m.n_vars)
     for c in keys(m.c_kdes)
@@ -281,6 +307,7 @@ Predict log-probabilities for the input column vectors.
 Returns tuples of predicted class and its log-probability estimate.
 """
 function predict_proba{V<:Number}(m::KernelNB, X::Matrix{V})
+    warn("method predict_proba for KernelNB is depricated")
     logprobs = predict_logprobs(m, X)
     classes = collect(keys(m.c_kdes))
     n_samples = size(X, 2)
@@ -296,20 +323,18 @@ end
 
 
 """
-    predict_proba{V<:Number}(m::KernelNB, X::Matrix{V})
+    predict_proba{V<:Number}(m::HybridNB, f_c::Vector{Vector{Float64}}, f_d::Vector{Vector{Int64}})
 
-Predict log-probabilities for the input column vectors.
+Predict log-probabilities for the input features.
 Returns tuples of predicted class and its log-probability estimate.
 """
-function predict_proba{T <: AbstractFloat, U <: Int}(m::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
-    @show "Calling predict_proba"
-    logprobs = predict_logprobs(m, continiues_features, discrete_features)
-    classes = collect(keys(m.c_kdes))
-    n_samples = num_samples(m, continiues_features, discrete_features)
-    predictions = Array(Tuple{eltype(classes), Float64}, n_samples)
+function predict_proba{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+    logprobs = predict_logprobs(m, continuous_features, discrete_features)
+    n_samples = num_samples(m, continuous_features, discrete_features)
+    predictions = Array(Tuple{eltype(m.classes), Float64}, n_samples)
     for i = 1:n_samples
         maxprob_idx = indmax(logprobs[:, i])
-        c = classes[maxprob_idx]
+        c = m.classes[maxprob_idx]
         logprob = logprobs[maxprob_idx, i]
         predictions[i] = (c, logprob)
     end
@@ -322,7 +347,7 @@ end
 
 Return a tuple of predicted class and log-probability for a single test vector.
 """
-function predict_proba{V<:Number}(m::KernelNB, X::Vector{V})
+function predict_proba{V<:Number}(m::KernelNB, X::Vector{V}) # what is that for?
     logprobs = predict_logprobs(m, X)
     classes = collect(keys(m.c_kdes))
     maxprob_idx = indmax(logprobs)
@@ -333,24 +358,24 @@ end
 
 # Predict kde naive bayes for each column of X
 function predict(m::KernelNB, X)
+    warn("predict method for KernelNB is depricated. Use HybridNB instead.")
     return [k for (k,v) in predict_proba(m, X)]
 end
 
-# This should replce the method above
-# function predict(m::KernelNB, X)
-#     continiues_features = Vector{Vector{Float64}}()
-#     for i in size(X, 1)
-#         push!(V, vec(X[i, :]))
-#     end
-#     return [k for (k,v) in predict_proba(m, continiues_features, Vector{Vector{Float64}}())]
-# end
-
-
-# Predict kde naive bayes for each column of X
-function predict{T <: AbstractFloat, U <: Int}(m::HybridNB, continiues_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
-    return [k for (k,v) in predict_proba(m, continiues_features, discrete_features)]
+""" Predict kde naive bayes for continuos featuers only"""
+function predict{T <: Number}(m::HybridNB, X::Matrix{T})
+    eltype(X) <: AbstractFloat || throw("Continuous features must be floats!")
+    return predict(m, from_matrix(X), Vector{Vector{Int}}())
 end
 
+"""
+    predict(m::HybridNB, f_c::Vector{Vector{Float64}}, f_d::Vector{Vector{Int64}}) -> labels
+
+Predict hybrid naive bayes for continuos featuers only
+"""
+function predict{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+    return [k for (k,v) in predict_proba(m, continuous_features, discrete_features)]
+end
 
 # TODO remove this once KernelDensity.jl pull request #27 is merged/tagged.
 function KernelDensity.InterpKDE{IT<:Grid.InterpType}(k::UnivariateKDE, bc::Number, it::Type{IT}=InterpQuadratic)

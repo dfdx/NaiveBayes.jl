@@ -87,6 +87,7 @@ immutable KernelNB{C}
 end
 
 function KernelNB{C}(classes::Vector{C}, n_vars::Int)
+    warn("KernelNB is depricated. Use HybridNB instead")
     classes = unique(classes)
     c_kdes = Dict{C, Vector{InterpKDE}}()
     for class in classes
@@ -104,17 +105,30 @@ end
 #####################################
 #####  Hybrid Naive Bayes       #####
 #####################################
-
-type ePDF{R <: AbstractArray, T <: AbstractFloat}
-    n::R
-    probability::Vector{T}
+""" a wrapper around key value pairs for a discrete probability distribution """
+immutable ePDF{C <: Associative}
+    pairs::C
 end
 
-function ePDF{T <: Int}(x::AbstractArray{T})
+""" Constructor of ePDF """
+function ePDF{T <: Integer}(x::AbstractVector{T})
     cnts = counts(x)
     ρ = map(Float64, cnts)/sum(cnts)
-    ρ[ρ .< eps()] = eps()
-    return ePDF(StatsBase.span(x), ρ)
+    ρ[ρ .< eps(Float64)] = eps(Float64)
+    d = Dict{Int, Float64}()
+    for (k,v) in zip(StatsBase.span(x), ρ)
+        d[k]=v
+    end
+    return ePDF(d)
+end
+
+""" query the ePDF to get the probability of n"""
+function probability(P::ePDF, n::Integer)
+    if n in keys(P.pairs)
+        return P.pairs[n]
+    else
+        return eps(eltype(values(P.pairs)))
+    end
 end
 
 
@@ -124,20 +138,25 @@ immutable HybridNB{C}
     num_kdes::Int
     c_discrete::Dict{C, Vector{ePDF}}
     num_discrete::Int # it would be nice to have the number of classes and the number of training examples for each class
-    class_prior::Vector{Float64}
+    classes::Vector{C}
 end
 
-
+""" A constructor for both types of features """
 function HybridNB{C, T <: Integer}(labels::Vector{C}, num_kdes::T, num_discrete::T)
     c_kdes = Dict{C, Vector{InterpKDE}}()
     c_discrete = Dict{C, Vector{ePDF}}()
     classes = unique(labels)
-    priors = map(Float64, counts(labels))/length(labels)
     for class in classes
         c_kdes[class] = Vector{InterpKDE}(num_kdes)
         c_discrete[class] = Vector{ePDF}(num_discrete)
     end
-    HybridNB{C}(c_kdes, num_kdes, c_discrete, num_discrete, priors)
+    HybridNB{C}(c_kdes, num_kdes, c_discrete, num_discrete, classes)
+end
+
+
+""" A constructor for continuous features only """
+function HybridNB{C, T <: Integer}(labels::Vector{C}, num_kdes::T)
+    return HybridNB(labels, num_kdes, 0)
 end
 
 
