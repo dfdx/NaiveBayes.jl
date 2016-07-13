@@ -25,7 +25,7 @@
     @testset "Hybrid NB" begin
 
         # a test to check that HybridNB successfully replaces KernelNB
-        m1 = HybridNB(y, 2)
+        m1 = HybridNB(y, [:c1, :c2])
         fit(m1, X, y)
         @test predict(m1, X) == y
 
@@ -45,13 +45,16 @@
         predict_c = Vector{Vector{Float64}}()
         push!(training_c, f_c1[1:end-Np], f_c2[1:end-Np])
         push!(predict_c, f_c1[end-Np:end], f_c2[end-Np:end])
+        names_c = [:c1, :c2]
+
 
         training_d = Vector{Vector{Int}}()
         predict_d = Vector{Vector{Int}}()
         push!(training_d, f_d[1:end-Np])
         push!(predict_d, f_d[end-Np:end])
+        names_d = [:d1]
 
-        model = HybridNB(labels[1:end-Np], length(training_c), length(training_d))
+        model = HybridNB(labels[1:end-Np], names_c, names_d)
         fit(model, training_c, training_d, labels[1:end-Np])
         y_h = predict(model, predict_c, predict_d)
         @test all(y_h .== labels[end-Np:end])

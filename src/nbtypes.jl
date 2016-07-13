@@ -131,22 +131,25 @@ function probability(P::ePDF, n::Integer)
 end
 
 
-""" A Naive Bayes model for both continuoes and discrete features"""
-immutable HybridNB{C}
+""" A Naive Bayes model for both continuous and discrete features"""
+immutable HybridNB{C, N}
     c_kdes::Dict{C, Vector{InterpKDE}}
-    num_kdes::Int
+    kdes_names::Vector{N}
     c_discrete::Dict{C, Vector{ePDF}}
-    num_discrete::Int # it would be nice to have the number of classes and the number of training examples for each class
+    discrete_names::Vector{N} # it would be nice to have the number of classes and the number of training examples for each class
     classes::Vector{C}
     priors::Dict{C, Float64}
 end
+
+num_kdes(m::HybridNB) = length(m.kdes_names)
+num_discrete(m::HybridNB) = length(m.discrete_names)
 
 """
     HybridNB(labels::Vector{Int 64}, num_kdes::Int64, num_discrete::Int64) -> model_h
 
 A constructor for both types of features
 """
-function HybridNB{C, T <: Integer}(labels::Vector{C}, num_kdes::T, num_discrete::T)
+function HybridNB{C, N}(labels::Vector{C}, kdes_names::AbstractVector{N}, discrete_names::AbstractVector{N})
     c_kdes = Dict{C, Vector{InterpKDE}}()
     c_discrete = Dict{C, Vector{ePDF}}()
     priors = Dict{C, Float64}()
@@ -154,10 +157,10 @@ function HybridNB{C, T <: Integer}(labels::Vector{C}, num_kdes::T, num_discrete:
     A = 1.0/float(length(labels))
     for class in classes
         priors[class] = A*float(sum(labels .== class))
-        c_kdes[class] = Vector{InterpKDE}(num_kdes)
-        c_discrete[class] = Vector{ePDF}(num_discrete)
+        c_kdes[class] = Vector{InterpKDE}(length(kdes_names))
+        c_discrete[class] = Vector{ePDF}(length(discrete_names))
     end
-    HybridNB{C}(c_kdes, num_kdes, c_discrete, num_discrete, classes, priors)
+    HybridNB{C, N}(c_kdes, kdes_names, c_discrete, discrete_names, classes, priors)
 end
 
 
@@ -166,14 +169,16 @@ end
 
 A constructor for continuous features only
 """
-function HybridNB{C, T <: Integer}(labels::Vector{C}, num_kdes::T)
-    return HybridNB(labels, num_kdes, 0)
+function HybridNB{C, N}(labels::AbstractVector{C}, kdes_names::AbstractVector{N})
+    return HybridNB(labels, kdes_names, Vector{N}())
 end
 
 
 function Base.show(io::IO, m::HybridNB)
     println(io, "HybridNB")
     println(io, "  Classes = $(keys(m.c_kdes))")
-    println(io, "  Number of continiues features = $(m.num_kdes)")
-    println(io, "  Number of discrete features = $(m.num_discrete)")
+    println(io, "  Number of continiues features = $(num_kdes(m))")
+    println(io, "  Names of continiues features = $(m.kdes_names)")
+    println(io, "  Number of discrete features = $(num_discrete(m))")
+    println(io, "  Names of discrete features = $(m.discrete_names)")
 end

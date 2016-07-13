@@ -31,11 +31,11 @@ end
 """computes log[P(x⃗ⁿ|c)] ≈ ∑ᵢ log[p(xⁿᵢ|c)] """
 function sum_log_x_given_c!{T <: AbstractFloat, U <: Int}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, c)
     for i = 1:num_samples(m, continuous_features, discrete_features)
-        for j = 1:m.num_kdes
+        for j = 1:num_kdes(m)
             feature_prob[j] = pdf(m.c_kdes[c][j], continuous_features[j][i])
         end
-        for j = 1:m.num_discrete
-            feature_prob[m.num_kdes+j] = probability(m.c_discrete[c][j], discrete_features[j][i])
+        for j = 1:num_discrete(m)
+            feature_prob[num_kdes(m)+j] = probability(m.c_discrete[c][j], discrete_features[j][i])
         end
         class_prob[i] = sum(log(feature_prob))
     end
@@ -44,7 +44,7 @@ end
 
 """ compute the number of samples """
 function num_samples{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}) # TODO: this is a bit strange
-    if m.num_kdes > m.num_discrete
+    if num_kdes(m) > num_discrete(m)
         n_samples = length(continuous_features[1])
     else
         n_samples = length(discrete_features[1])
@@ -61,7 +61,7 @@ Return the log-probabilities for each column of X, where each row is the class
 function predict_logprobs{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
     n_samples = num_samples(m, continuous_features, discrete_features)
     log_probs_per_class = zeros(length(m.classes) ,n_samples)
-    feature_prob = Vector{Float64}(m.num_kdes + m.num_discrete)
+    feature_prob = Vector{Float64}(num_kdes(m) + num_discrete(m))
     for (i, c) in enumerate(m.classes)
         class_prob = Vector{Float64}(n_samples)
         sum_log_x_given_c!(class_prob, feature_prob, m, continuous_features, discrete_features, c)
