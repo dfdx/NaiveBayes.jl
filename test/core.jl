@@ -47,7 +47,6 @@
         push!(predict_c, f_c1[end-Np:end], f_c2[end-Np:end])
         names_c = [:c1, :c2]
 
-
         training_d = Vector{Vector{Int}}()
         predict_d = Vector{Vector{Int}}()
         push!(training_d, f_d[1:end-Np])

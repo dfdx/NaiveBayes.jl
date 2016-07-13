@@ -110,3 +110,26 @@ function KernelDensity.InterpKDE{IT<:Grid.InterpType}(k::UnivariateKDE, bc::Numb
     g = CoordInterpGrid(k.x, k.density, bc, it)
     InterpKDE(k, g)
 end
+
+
+function write_model(model::HybridNB, filename::AbstractString)
+    h5open(filename, "w") do f
+        for c in model.classes
+            grp = g_create(f, "$c")
+
+            sub = g_create(grp, "Discrete")
+            for (name, discrete) in zip(model.discrete_names, model.c_discrete[c])
+                f_grp = g_create(sub, "$name")
+                f_grp["range"] = collect(keys(discrete.pairs))
+                f_grp["probability"] = collect(values(discrete.pairs))
+            end
+
+            sub = g_create(grp, "Continuous")
+            for (name, continuous) in zip(model.kdes_names, model.c_kdes[c])
+                f_grp = g_create(sub, "$name")
+                f_grp["x"] = collect(continuous.kde.x)
+                f_grp["density"] = collect(continuous.kde.density)
+            end
+        end
+    end
+end

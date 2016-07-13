@@ -1,7 +1,7 @@
-
 module NaiveBayes
 
 using Distributions
+using HDF5
 using KernelDensity
 using Grid
 using StatsBase
@@ -16,7 +16,8 @@ export NBModel,
         predict_proba,
         predict_logprobs,
         restructure_matrix,
-        to_matrix
+        to_matrix,
+        write_model
 
 include("nbtypes.jl")
 include("common.jl")
