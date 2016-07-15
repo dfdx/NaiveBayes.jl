@@ -63,3 +63,10 @@ As a subproduct, this package also provides a `DataStats` type that may be used 
     # predict the classification for new events (points): features_c, features_d
     y = predict(hybrid_model, features_c, features_d)
     ```
+
+
+### Write/Load models to files
+
+It is useful to train a model once and than use it for prediction many times later. For example, train your clussifier on a local machine and than use it on a cluster to classify points in parallel.
+
+There is support for writing `HybridNB` models to HDF5 files via the methods `write_model` and `load_model`. This is useful for interacting with other programs/languages. For Julia to Julia it is easy to use **JLD.jl**.
