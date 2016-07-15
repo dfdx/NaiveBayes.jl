@@ -17,7 +17,9 @@ export NBModel,
         predict_logprobs,
         restructure_matrix,
         to_matrix,
-        write_model
+        write_model,
+        load_model,
+        get_features_names
 
 include("nbtypes.jl")
 include("common.jl")

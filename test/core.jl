@@ -23,9 +23,8 @@
     end
 
     @testset "Hybrid NB" begin
-
         # a test to check that HybridNB successfully replaces KernelNB
-        m1 = HybridNB(y, [:c1, :c2])
+        m1 = HybridNB(y, ["c1", "c2"])
         fit(m1, X, y)
         @test predict(m1, X) == y
 
@@ -45,23 +44,44 @@
         predict_c = Vector{Vector{Float64}}()
         push!(training_c, f_c1[1:end-Np], f_c2[1:end-Np])
         push!(predict_c, f_c1[end-Np:end], f_c2[end-Np:end])
-        names_c = [:c1, :c2]
+        names_c = ["c1", "c2"]
 
         training_d = Vector{Vector{Int}}()
         predict_d = Vector{Vector{Int}}()
         push!(training_d, f_d[1:end-Np])
         push!(predict_d, f_d[end-Np:end])
-        names_d = [:d1]
+        names_d = ["d1"]
 
         model = HybridNB(labels[1:end-Np], names_c, names_d)
         fit(model, training_c, training_d, labels[1:end-Np])
         y_h = predict(model, predict_c, predict_d)
         @test all(y_h .== labels[end-Np:end])
 
+        mkdir("tmp")
+        write_model(m1, "tmp/test.h5")
+        m2 = load_model("tmp/test.h5")
+        rm("tmp", recursive=true)
+
+
+        @test m1.classes == m2.classes
+        @test m1.priors == m2.priors
+        @test m1.kdes_names == m2.kdes_names
+        @test m1.discrete_names == m2.discrete_names
+
+        for c in m1.classes
+            for (p1, p2) = zip(m1.c_discrete[c], m2.c_discrete[c])
+                @test p1.pairs == p2.pairs
+            end
+            for (k1, k2) = zip(m1.c_kdes[c], m2.c_kdes[c])
+                @test k1.kde.x == k2.kde.x
+                @test k1.kde.density == k2.kde.density
+            end
+        end
+
     end
 
     @testset "restructure features" begin
-        M = rand(3,4)
+        M = rand(3, 4)
         V = restructure_matrix(M)
         Mp = to_matrix(V)
         @test all(M .== Mp)

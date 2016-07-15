@@ -132,11 +132,11 @@ end
 
 
 """ A Naive Bayes model for both continuous and discrete features"""
-immutable HybridNB{C, N}
+immutable HybridNB{C <: Integer, N <: AbstractString}
     c_kdes::Dict{C, Vector{InterpKDE}}
     kdes_names::Vector{N}
     c_discrete::Dict{C, Vector{ePDF}}
-    discrete_names::Vector{N} # it would be nice to have the number of classes and the number of training examples for each class
+    discrete_names::Vector{N}
     classes::Vector{C}
     priors::Dict{C, Float64}
 end
@@ -149,7 +149,7 @@ num_discrete(m::HybridNB) = length(m.discrete_names)
 
 A constructor for both types of features
 """
-function HybridNB{C, N}(labels::Vector{C}, kdes_names::AbstractVector{N}, discrete_names::AbstractVector{N})
+function HybridNB{C <: Integer, N <: AbstractString}(labels::Vector{C}, kdes_names::AbstractVector{N}, discrete_names::AbstractVector{N})
     c_kdes = Dict{C, Vector{InterpKDE}}()
     c_discrete = Dict{C, Vector{ePDF}}()
     priors = Dict{C, Float64}()
