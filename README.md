@@ -2,6 +2,7 @@ NaiveBayes.jl
 =============
 
 [![Build Status](https://travis-ci.org/dfdx/NaiveBayes.jl.svg)](https://travis-ci.org/dfdx/NaiveBayes.jl)
+[![codecov.io](http://codecov.io/github/dfdx/NaiveBayes.jl/coverage.svg)](http://codecov.io/github/dfdx/NaiveBayes.jl)
 
 Naive Bayes classifier. Currently 3 types of NB are supported:
 
