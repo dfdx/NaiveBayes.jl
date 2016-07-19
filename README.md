@@ -40,7 +40,7 @@ As a subproduct, this package also provides a `DataStats` type that may be used 
 
 2. Continuous features only as a `Matrix`
     ```julia
-    X_tarin = randn(3,400);
+    X_train = randn(3,400);
     X_classify = randn(3,10)
 
     hybrid_model = HybridNB(labels, size(X, 1)) # the number of discrete features is 0 so it's not needed
@@ -49,7 +49,7 @@ As a subproduct, this package also provides a `DataStats` type that may be used 
     ```
 3. Continuous and discrete features as a `Matrix{Float}`
     ```julia
-        #X is a matrix of features
+    #X is a matrix of features
     # the first 3 rows are continuous
     training_features_continuous = from_matrix(X[1:3, :])
     # the last 2 rows are discrete and must be integers
@@ -67,6 +67,6 @@ As a subproduct, this package also provides a `DataStats` type that may be used 
 
 ### Write/Load models to files
 
-It is useful to train a model once and than use it for prediction many times later. For example, train your clussifier on a local machine and than use it on a cluster to classify points in parallel.
+It is useful to train a model once and then use it for prediction many times later. For example, train your classifier on a local machine and then use it on a cluster to classify points in parallel.
 
-There is support for writing `HybridNB` models to HDF5 files via the methods `write_model` and `load_model`. This is useful for interacting with other programs/languages. For Julia to Julia it is easy to use **JLD.jl**.
+There is support for writing `HybridNB` models to HDF5 files via the methods `write_model` and `load_model`. This is useful for interacting with other programs/languages. If the model file is going to be read on in Julia it is easier to use **JLD.jl** for saving and loading the file.

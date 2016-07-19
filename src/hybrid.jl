@@ -134,10 +134,11 @@ function write_model(model::HybridNB, filename::AbstractString)
             end
         end
     end
+    info("Writing HybridNB model to file $filename")
 end
 
 
-function get_features_names(filename::AbstractString)
+function get_feature_names(filename::AbstractString)
     classes, priors, kdes_names, discrete_names = h5open(filename, "r") do f
         c_names = names(f)
         classes = read(f["Classes/Label"])
@@ -156,7 +157,7 @@ function get_features_names(filename::AbstractString)
     return classes, priors, kdes_names, discrete_names
 end
 
-function to_range{T <: Number}(y::Vector{T}) # TODO: is there a nice method that does this already?
+function to_range{T <: Number}(y::Vector{T})
     min, max = extrema(y)
     dy = (max-min)/(length(y)-1)
     return min:dy:max
@@ -164,7 +165,7 @@ end
 
 
 function load_model{C <: AbstractString}(filename::C)
-    classes, priors_vec, kdes_names, discrete_names = get_features_names(filename)
+    classes, priors_vec, kdes_names, discrete_names = get_feature_names(filename)
     c_kdes = Dict{Int64, Vector{InterpKDE}}()
     c_discrete = Dict{Int64, Vector{ePDF}}()
     priors = Dict{Int64, Float64}()
@@ -183,7 +184,7 @@ function load_model{C <: AbstractString}(filename::C)
             end
             for (i, c_name) in enumerate(kdes_names)
                 x = read(f["$c"]["Continuous"][c_name])["x"]
-                c_kdes[c][i] = InterpKDE(UnivariateKDE(to_range(x), read(f["$c"]["Continuous"][c_name])["density"]))
+                c_kdes[c][i] = InterpKDE(UnivariateKDE(to_range(x), read(f["$c"]["Continuous"][c_name])["density"]), eps(Float64), InterpLinear)
             end
         end
     end

@@ -177,8 +177,8 @@ end
 function Base.show(io::IO, m::HybridNB)
     println(io, "HybridNB")
     println(io, "  Classes = $(keys(m.c_kdes))")
-    println(io, "  Number of continiues features = $(num_kdes(m))")
-    println(io, "  Names of continiues features = $(m.kdes_names)")
+    println(io, "  Number of continuous features = $(num_kdes(m))")
+    println(io, "  Names of continuous features = $(m.kdes_names)")
     println(io, "  Number of discrete features = $(num_discrete(m))")
     println(io, "  Names of discrete features = $(m.discrete_names)")
 end

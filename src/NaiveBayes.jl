@@ -19,7 +19,7 @@ export NBModel,
         to_matrix,
         write_model,
         load_model,
-        get_features_names
+        get_feature_names
 
 include("nbtypes.jl")
 include("common.jl")

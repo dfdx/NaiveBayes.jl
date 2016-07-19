@@ -23,7 +23,6 @@
     end
 
     @testset "Hybrid NB" begin
-        # a test to check that HybridNB successfully replaces KernelNB
         m1 = HybridNB(y, ["c1", "c2"])
         fit(m1, X, y)
         @test predict(m1, X) == y
