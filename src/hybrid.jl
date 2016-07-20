@@ -31,11 +31,11 @@ end
 """computes log[P(x⃗ⁿ|c)] ≈ ∑ᵢ log[p(xⁿᵢ|c)] """
 function sum_log_x_given_c!{T <: AbstractFloat, U <: Int}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, c)
     for i = 1:num_samples(m, continuous_features, discrete_features)
-        for j = 1:m.num_kdes
+        for j = 1:num_kdes(m)
             feature_prob[j] = pdf(m.c_kdes[c][j], continuous_features[j][i])
         end
-        for j = 1:m.num_discrete
-            feature_prob[m.num_kdes+j] = probability(m.c_discrete[c][j], discrete_features[j][i])
+        for j = 1:num_discrete(m)
+            feature_prob[num_kdes(m)+j] = probability(m.c_discrete[c][j], discrete_features[j][i])
         end
         class_prob[i] = sum(log(feature_prob))
     end
@@ -44,7 +44,7 @@ end
 
 """ compute the number of samples """
 function num_samples{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}) # TODO: this is a bit strange
-    if m.num_kdes > m.num_discrete
+    if num_kdes(m) > num_discrete(m)
         n_samples = length(continuous_features[1])
     else
         n_samples = length(discrete_features[1])
@@ -61,7 +61,7 @@ Return the log-probabilities for each column of X, where each row is the class
 function predict_logprobs{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
     n_samples = num_samples(m, continuous_features, discrete_features)
     log_probs_per_class = zeros(length(m.classes) ,n_samples)
-    feature_prob = Vector{Float64}(m.num_kdes + m.num_discrete)
+    feature_prob = Vector{Float64}(num_kdes(m) + num_discrete(m))
     for (i, c) in enumerate(m.classes)
         class_prob = Vector{Float64}(n_samples)
         sum_log_x_given_c!(class_prob, feature_prob, m, continuous_features, discrete_features, c)
@@ -109,4 +109,93 @@ end
 function KernelDensity.InterpKDE{IT<:Grid.InterpType}(k::UnivariateKDE, bc::Number, it::Type{IT}=InterpQuadratic)
     g = CoordInterpGrid(k.x, k.density, bc, it)
     InterpKDE(k, g)
+end
+
+
+function write_model(model::HybridNB, filename::AbstractString)
+    h5open(filename, "w") do f
+        f["NameType"] = "$(eltype(model.kdes_names))"
+        info("Writing a model with names of type $eltype(model.kdes_names)")
+        grp = g_create(f, "Classes")
+        grp["Label"] = model.classes
+        grp["Prior"] = collect(values(model.priors))
+        for c in model.classes
+            grp = g_create(f, "$c")
+            sub = g_create(grp, "Discrete")
+            for (name, discrete) in zip(model.discrete_names, model.c_discrete[c])
+                f_grp = g_create(sub, "$name")
+                f_grp["range"] = collect(keys(discrete.pairs))
+                f_grp["probability"] = collect(values(discrete.pairs))
+            end
+
+            sub = g_create(grp, "Continuous")
+            for (name, continuous) in zip(model.kdes_names, model.c_kdes[c])
+                f_grp = g_create(sub, "$name")
+                f_grp["x"] = collect(continuous.kde.x)
+                f_grp["density"] = collect(continuous.kde.density)
+            end
+        end
+    end
+    info("Writing HybridNB model to file $filename")
+end
+
+
+function get_feature_names(filename::AbstractString)
+    classes, priors, kdes_names, discrete_names = h5open(filename, "r") do f
+        classes = read(f["Classes/Label"])
+        priors = read(f["Classes/Prior"])
+        c_names = map(string, classes)
+        if read(f["NameType"]) == "Symbol"
+            N = Symbol
+        else
+            N = AbstractString
+        end
+        info("Reading a model with names of type $N")
+        kdes_names = Vector{N}()
+        discrete_names = Vector{N}()
+
+        for n in names(f[c_names[1]]["Continuous"])
+            push!(kdes_names, convert(N, n))
+        end
+        for n in names(f[c_names[1]]["Discrete"])
+            push!(discrete_names, convert(N, n))
+        end
+        classes, priors, kdes_names, discrete_names
+    end
+    return classes, priors, kdes_names, discrete_names
+end
+
+
+function to_range{T <: Number}(y::Vector{T})
+    min, max = extrema(y)
+    dy = (max-min)/(length(y)-1)
+    return min:dy:max
+end
+
+
+function load_model{C <: AbstractString}(filename::C)
+    classes, priors_vec, kdes_names, discrete_names = get_feature_names(filename)
+    c_kdes = Dict{Int64, Vector{InterpKDE}}()
+    c_discrete = Dict{Int64, Vector{ePDF}}()
+    priors = Dict{Int64, Float64}()
+    [priors[k]=v for (k,v) in zip(classes, priors_vec)]
+
+    h5open(filename, "r") do f
+        for c in classes
+            c_discrete[c] = Vector{ePDF}(length(discrete_names))
+            c_kdes[c] = Vector{InterpKDE}(length(kdes_names))
+            for (i, d_name) in enumerate(discrete_names)
+                rng = read(f["$c"]["Discrete"]["$d_name"]["range"])
+                prob = read(f["$c"]["Discrete"]["$d_name"]["probability"])
+                d = Dict{eltype(rng), eltype(prob)}()
+                [d[k]=v for (k,v) in zip(rng, prob)]
+                c_discrete[c][i] = ePDF(d)
+            end
+            for (i, c_name) in enumerate(kdes_names)
+                x = read(f["$c"]["Continuous"]["$c_name"])["x"]
+                c_kdes[c][i] = InterpKDE(UnivariateKDE(to_range(x), read(f["$c"]["Continuous"]["$c_name"])["density"]), eps(Float64), InterpLinear)
+            end
+        end
+    end
+    return HybridNB{Int64, eltype(kdes_names)}(c_kdes, kdes_names, c_discrete, discrete_names, classes, priors)
 end
