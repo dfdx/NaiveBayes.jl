@@ -69,4 +69,4 @@ As a subproduct, this package also provides a `DataStats` type that may be used 
 
 It is useful to train a model once and then use it for prediction many times later. For example, train your classifier on a local machine and then use it on a cluster to classify points in parallel.
 
-There is support for writing `HybridNB` models to HDF5 files via the methods `write_model` and `load_model`. This is useful for interacting with other programs/languages. If the model file is going to be read on in Julia it is easier to use **JLD.jl** for saving and loading the file.
+There is support for writing `HybridNB` models to HDF5 files via the methods `write_model` and `load_model`. This is useful for interacting with other programs/languages. If the model file is going to be read only in Julia it is easier to use **JLD.jl** for saving and loading the file.

@@ -1,3 +1,22 @@
+function compare_models!(m3::HybridNB, m4::HybridNB)
+    @test m3.classes == m4.classes
+    @test m3.priors == m4.priors
+    @test m3.kdes_names == m4.kdes_names
+    @test m3.discrete_names == m4.discrete_names
+
+    for c in m3.classes
+        for (p1, p2) = zip(m3.c_discrete[c], m4.c_discrete[c])
+            @test p1.pairs == p2.pairs
+        end
+        for (k1, k2) = zip(m3.c_kdes[c], m4.c_kdes[c])
+            @test k1.kde.x == k2.kde.x
+            @test k1.kde.density == k2.kde.density
+        end
+    end
+
+end
+
+
 @testset "Core Functions" begin
     # 6 data samples with 2 variables belonging to 2 classes
     X = [-1.0 -2.0 -3.0 1.0 2.0 3.0;
@@ -23,9 +42,6 @@
     end
 
     @testset "Hybrid NB" begin
-        m1 = HybridNB(y, ["c1", "c2"])
-        fit(m1, X, y)
-        @test predict(m1, X) == y
 
         N1 = 100000
         N2 = 160000
@@ -33,6 +49,7 @@
 
         srand(0)
 
+        # test with names as Symbols
         perm = randperm(N1+N2)
         labels = [ones(Int, N1); zeros(Int, N2)][perm]
         f_c1 = [0.35randn(N1); 3.0 + 0.2randn(N2)][perm]
@@ -43,40 +60,37 @@
         predict_c = Vector{Vector{Float64}}()
         push!(training_c, f_c1[1:end-Np], f_c2[1:end-Np])
         push!(predict_c, f_c1[end-Np:end], f_c2[end-Np:end])
-        names_c = ["c1", "c2"]
+        names_c = [:c1, :c2]
 
         training_d = Vector{Vector{Int}}()
         predict_d = Vector{Vector{Int}}()
         push!(training_d, f_d[1:end-Np])
         push!(predict_d, f_d[end-Np:end])
-        names_d = ["d1"]
+        names_d = [:d1]
 
         model = HybridNB(labels[1:end-Np], names_c, names_d)
         fit(model, training_c, training_d, labels[1:end-Np])
         y_h = predict(model, predict_c, predict_d)
         @test all(y_h .== labels[end-Np:end])
 
+
         mkdir("tmp")
-        write_model(m1, "tmp/test.h5")
+        write_model(model, "tmp/test.h5")
         m2 = load_model("tmp/test.h5")
         rm("tmp", recursive=true)
+        compare_models!(model, m2)
 
 
-        @test m1.classes == m2.classes
-        @test m1.priors == m2.priors
-        @test m1.kdes_names == m2.kdes_names
-        @test m1.discrete_names == m2.discrete_names
+        #testing reading adn writing the model file with Strings
+        m3 = HybridNB(y, ["c1", "c2"])
+        fit(m3, X, y)
+        @test predict(m3, X) == y
 
-        for c in m1.classes
-            for (p1, p2) = zip(m1.c_discrete[c], m2.c_discrete[c])
-                @test p1.pairs == p2.pairs
-            end
-            for (k1, k2) = zip(m1.c_kdes[c], m2.c_kdes[c])
-                @test k1.kde.x == k2.kde.x
-                @test k1.kde.density == k2.kde.density
-            end
-        end
-
+        mkdir("tmp")
+        write_model(m3, "tmp/test.h5")
+        m4 = load_model("tmp/test.h5")
+        rm("tmp", recursive=true)
+        compare_models!(m3, m4)
     end
 
     @testset "restructure features" begin

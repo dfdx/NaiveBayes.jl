@@ -76,30 +76,6 @@ function Base.show(io::IO, m::GaussianNB)
     print(io, "GaussianNB($(m.c_counts))")
 end
 
-#####################################
-#####  Kernel Naive Bayes       #####
-#####################################
-
-immutable KernelNB{C}
-    c_kdes::Dict{C, Vector{InterpKDE}}
-    n_vars::Int
-end
-
-function KernelNB{C}(classes::Vector{C}, n_vars::Int)
-    warn("KernelNB is depricated. Use HybridNB instead")
-    classes = unique(classes)
-    c_kdes = Dict{C, Vector{InterpKDE}}()
-    for class in classes
-        c_kdes[class] = Vector{InterpKDE}(n_vars)
-    end
-    KernelNB{C}(c_kdes, n_vars)
-end
-
-function Base.show(io::IO, m::KernelNB)
-    println(io, "KernelNB")
-    println(io, "  Classes = $(keys(m.c_kdes))")
-    print(io, "  Number of variables = $(m.n_vars)")
-end
 
 #####################################
 #####  Hybrid Naive Bayes       #####
@@ -132,7 +108,7 @@ end
 
 
 """ A Naive Bayes model for both continuous and discrete features"""
-immutable HybridNB{C <: Integer, N <: AbstractString}
+immutable HybridNB{C <: Integer, N}
     c_kdes::Dict{C, Vector{InterpKDE}}
     kdes_names::Vector{N}
     c_discrete::Dict{C, Vector{ePDF}}
@@ -149,7 +125,7 @@ num_discrete(m::HybridNB) = length(m.discrete_names)
 
 A constructor for both types of features
 """
-function HybridNB{C <: Integer, N <: AbstractString}(labels::Vector{C}, kdes_names::AbstractVector{N}, discrete_names::AbstractVector{N})
+function HybridNB{C <: Integer, N}(labels::Vector{C}, kdes_names::AbstractVector{N}, discrete_names::AbstractVector{N})
     c_kdes = Dict{C, Vector{InterpKDE}}()
     c_discrete = Dict{C, Vector{ePDF}}()
     priors = Dict{C, Float64}()

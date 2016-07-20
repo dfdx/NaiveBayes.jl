@@ -114,6 +114,8 @@ end
 
 function write_model(model::HybridNB, filename::AbstractString)
     h5open(filename, "w") do f
+        f["NameType"] = "$(eltype(model.kdes_names))"
+        info("Writing a model with names of type $eltype(model.kdes_names)")
         grp = g_create(f, "Classes")
         grp["Label"] = model.classes
         grp["Prior"] = collect(values(model.priors))
@@ -129,7 +131,7 @@ function write_model(model::HybridNB, filename::AbstractString)
             sub = g_create(grp, "Continuous")
             for (name, continuous) in zip(model.kdes_names, model.c_kdes[c])
                 f_grp = g_create(sub, "$name")
-                f_grp["x"] = collect(continuous.kde.x) # FIXME: this may be unnecessary
+                f_grp["x"] = collect(continuous.kde.x)
                 f_grp["density"] = collect(continuous.kde.density)
             end
         end
@@ -140,22 +142,29 @@ end
 
 function get_feature_names(filename::AbstractString)
     classes, priors, kdes_names, discrete_names = h5open(filename, "r") do f
-        c_names = names(f)
         classes = read(f["Classes/Label"])
         priors = read(f["Classes/Prior"])
-        kdes_names = Vector{AbstractString}()
-        discrete_names = Vector{AbstractString}()
+        c_names = map(string, classes)
+        if read(f["NameType"]) == "Symbol"
+            N = Symbol
+        else
+            N = AbstractString
+        end
+        info("Reading a model with names of type $N")
+        kdes_names = Vector{N}()
+        discrete_names = Vector{N}()
 
         for n in names(f[c_names[1]]["Continuous"])
-            push!(kdes_names, n)
+            push!(kdes_names, convert(N, n))
         end
         for n in names(f[c_names[1]]["Discrete"])
-            push!(discrete_names, n)
+            push!(discrete_names, convert(N, n))
         end
         classes, priors, kdes_names, discrete_names
     end
     return classes, priors, kdes_names, discrete_names
 end
+
 
 function to_range{T <: Number}(y::Vector{T})
     min, max = extrema(y)
@@ -176,17 +185,17 @@ function load_model{C <: AbstractString}(filename::C)
             c_discrete[c] = Vector{ePDF}(length(discrete_names))
             c_kdes[c] = Vector{InterpKDE}(length(kdes_names))
             for (i, d_name) in enumerate(discrete_names)
-                rng = read(f["$c"]["Discrete"][d_name]["range"])
-                prob = read(f["$c"]["Discrete"][d_name]["probability"])
+                rng = read(f["$c"]["Discrete"]["$d_name"]["range"])
+                prob = read(f["$c"]["Discrete"]["$d_name"]["probability"])
                 d = Dict{eltype(rng), eltype(prob)}()
                 [d[k]=v for (k,v) in zip(rng, prob)]
                 c_discrete[c][i] = ePDF(d)
             end
             for (i, c_name) in enumerate(kdes_names)
-                x = read(f["$c"]["Continuous"][c_name])["x"]
-                c_kdes[c][i] = InterpKDE(UnivariateKDE(to_range(x), read(f["$c"]["Continuous"][c_name])["density"]), eps(Float64), InterpLinear)
+                x = read(f["$c"]["Continuous"]["$c_name"])["x"]
+                c_kdes[c][i] = InterpKDE(UnivariateKDE(to_range(x), read(f["$c"]["Continuous"]["$c_name"])["density"]), eps(Float64), InterpLinear)
             end
         end
     end
-    return HybridNB{Int64, AbstractString}(c_kdes, kdes_names, c_discrete, discrete_names, classes, priors)
+    return HybridNB{Int64, eltype(kdes_names)}(c_kdes, kdes_names, c_discrete, discrete_names, classes, priors)
 end
