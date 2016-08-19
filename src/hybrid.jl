@@ -3,7 +3,7 @@
 
 Train NB model with discrete and continuous features by estimating P(x⃗|c)
 """
-function fit{C, T<: AbstractFloat, U<:Int}(model::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, labels::Vector{C})
+function fit{C, T<: AbstractFloat, U <: Integer}(model::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, labels::Vector{C})
     for class in model.classes
         inds = find(labels .== class)
         for (j, feature) in enumerate(continuous_features)
@@ -29,7 +29,7 @@ end
 
 
 """computes log[P(x⃗ⁿ|c)] ≈ ∑ᵢ log[p(xⁿᵢ|c)] """
-function sum_log_x_given_c!{T <: AbstractFloat, U <: Int}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, c)
+function sum_log_x_given_c!{T <: AbstractFloat, U <: Integer}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, c)
     for i = 1:num_samples(m, continuous_features, discrete_features)
         for j = 1:num_kdes(m)
             feature_prob[j] = pdf(m.c_kdes[c][j], continuous_features[j][i])
@@ -43,7 +43,7 @@ end
 
 
 """ compute the number of samples """
-function num_samples{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}) # TODO: this is a bit strange
+function num_samples{T <: AbstractFloat, U <: Integer}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}) # TODO: this is a bit strange
     if num_kdes(m) > num_discrete(m)
         n_samples = length(continuous_features[1])
     else
@@ -58,7 +58,7 @@ end
 
 Return the log-probabilities for each column of X, where each row is the class
 """
-function predict_logprobs{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+function predict_logprobs{T <: AbstractFloat, U <: Integer}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
     n_samples = num_samples(m, continuous_features, discrete_features)
     log_probs_per_class = zeros(length(m.classes) ,n_samples)
     feature_prob = Vector{Float64}(num_kdes(m) + num_discrete(m))
@@ -77,7 +77,7 @@ end
 Predict log-probabilities for the input features.
 Returns tuples of predicted class and its log-probability estimate.
 """
-function predict_proba{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+function predict_proba{T <: AbstractFloat, U <: Integer}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
     logprobs = predict_logprobs(m, continuous_features, discrete_features)
     n_samples = num_samples(m, continuous_features, discrete_features)
     predictions = Array(Tuple{eltype(m.classes), Float64}, n_samples)
@@ -101,7 +101,7 @@ end
 
 Predict hybrid naive bayes for continuos featuers only
 """
-function predict{T <: AbstractFloat, U <: Int}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+function predict{T <: AbstractFloat, U <: Integer}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
     return [k for (k,v) in predict_proba(m, continuous_features, discrete_features)]
 end
 
@@ -115,7 +115,7 @@ end
 function write_model(model::HybridNB, filename::AbstractString)
     h5open(filename, "w") do f
         f["NameType"] = "$(eltype(model.kdes_names))"
-        info("Writing a model with names of type $eltype(model.kdes_names)")
+        info("Writing a model with names of type $(eltype(model.kdes_names))")
         grp = g_create(f, "Classes")
         grp["Label"] = model.classes
         grp["Prior"] = collect(values(model.priors))
