@@ -115,7 +115,7 @@ end
 function write_model(model::HybridNB, filename::AbstractString)
     h5open(filename, "w") do f
         f["NameType"] = "$(eltype(model.kdes_names))"
-        info("Writing a model with names of type $eltype(model.kdes_names)")
+        info("Writing a model with names of type $(eltype(model.kdes_names))")
         grp = g_create(f, "Classes")
         grp["Label"] = model.classes
         grp["Prior"] = collect(values(model.priors))
