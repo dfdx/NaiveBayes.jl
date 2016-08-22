@@ -7,10 +7,12 @@ function fit{C, T<: AbstractFloat, U <: Integer}(model::HybridNB, continuous_fea
     for class in model.classes
         inds = find(labels .== class)
         for (j, feature) in enumerate(continuous_features)
-            model.c_kdes[class][j] = InterpKDE(kde(feature[inds]), eps(Float64), InterpLinear)
+            f_data = feature[inds]
+            model.c_kdes[class][j] = InterpKDE(kde(f_data[isfinite(f_data)]), eps(Float64), InterpLinear)
         end
         for (j, feature) in enumerate(discrete_features)
-            model.c_discrete[class][j] = ePDF(feature[inds])
+            f_data = feature[inds]
+            model.c_discrete[class][j] = ePDF(f_data[isfinite(f_data)])
         end
     end
     return model
@@ -31,13 +33,25 @@ end
 """computes log[P(x⃗ⁿ|c)] ≈ ∑ᵢ log[p(xⁿᵢ|c)] """
 function sum_log_x_given_c!{T <: AbstractFloat, U <: Integer}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, c)
     for i = 1:num_samples(m, continuous_features, discrete_features)
+
         for j = 1:num_kdes(m)
-            feature_prob[j] = pdf(m.c_kdes[c][j], continuous_features[j][i])
+            if isnan(continuous_features[j][i])
+                feature_prob[j] = NaN
+            else
+                feature_prob[j] = pdf(m.c_kdes[c][j], continuous_features[j][i])
+            end
         end
+
         for j = 1:num_discrete(m)
-            feature_prob[num_kdes(m)+j] = probability(m.c_discrete[c][j], discrete_features[j][i])
+            if isnan(continuous_features[j][i])
+                feature_prob[num_kdes(m)+j] = NaN
+            else
+                feature_prob[num_kdes(m)+j] = probability(m.c_discrete[c][j], discrete_features[j][i])
+            end
         end
-        class_prob[i] = sum(log(feature_prob))
+
+        sel = isfinite(feature_prob)
+        class_prob[i] = sum(log(feature_prob[sel]))
     end
 end
 
