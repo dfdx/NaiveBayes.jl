@@ -1,7 +1,7 @@
 function compare_models!(m3::HybridNB, m4::HybridNB)
     @test m3.classes == m4.classes
     @test m3.priors == m4.priors
-    @test m3.kdes_names == m4.kdes_names
+    @test m3.kde_names == m4.kde_names
     @test m3.discrete_names == m4.discrete_names
 
     for c in m3.classes
@@ -68,11 +68,17 @@ end
         push!(predict_d, f_d[end-Np:end])
         names_d = [:d1]
 
+        # Test constructor with the number of features
+        m = HybridNB(labels[1:end-Np], length(names_c), length(names_d))
+        fit(m, training_c, training_d, labels[1:end-Np])
+        y_h = predict(m, predict_c, predict_d)
+        @test all(y_h .== labels[end-Np:end])
+
+        # Test constructor with given feature names
         model = HybridNB(labels[1:end-Np], names_c, names_d)
         fit(model, training_c, training_d, labels[1:end-Np])
         y_h = predict(model, predict_c, predict_d)
         @test all(y_h .== labels[end-Np:end])
-
 
         mkdir("tmp")
         write_model(model, "tmp/test.h5")
@@ -81,7 +87,7 @@ end
         compare_models!(model, m2)
 
 
-        #testing reading adn writing the model file with Strings
+        # Test reading and writing the model file with Strings
         m3 = HybridNB(y, ["c1", "c2"])
         fit(m3, X, y)
         @test predict(m3, X) == y
@@ -93,7 +99,7 @@ end
         compare_models!(m3, m4)
     end
 
-    @testset "restructure features" begin
+    @testset "Restructure features" begin
         M = rand(3, 4)
         V = restructure_matrix(M)
         Mp = to_matrix(V)
