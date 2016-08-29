@@ -123,16 +123,27 @@ HybridNB(labels::AbstractVector, num_kde::Int, num_discrete::Int)
 * `num_discrete` : Number of discrete features
 
 """
-immutable HybridNB{C, N}
-    c_kdes::Dict{C, Vector{InterpKDE}}
-    kde_names::Vector{N}
-    c_discrete::Dict{C, Vector{ePDF}}
-    discrete_names::Vector{N}
+immutable HybridNB{C <: Integer, N}
+    c_kdes::Dict{C, Dict{N, InterpKDE}}
+    kdes_names::Vector{N} # TODO no need fro this
+    c_discrete::Dict{C, Dict{N, ePDF}}
+    discrete_names::Vector{N} # TODO no need fro this
     classes::Vector{C}
     priors::Dict{C, Float64}
 end
 
-num_kdes(m::HybridNB) = length(m.kde_names)
+# """ A Naive Bayes model for both continuous and discrete features"""
+# immutable HybridNB{C <: Integer, N}
+#     c_kdes::Dict{C, Vector{InterpKDE}}
+#     kdes_names::Vector{N}
+#     c_discrete::Dict{C, Vector{ePDF}}
+#     discrete_names::Vector{N}
+#     classes::Vector{C}
+#     priors::Dict{C, Float64}
+# end
+
+
+num_kdes(m::HybridNB) = length(m.kdes_names)
 num_discrete(m::HybridNB) = length(m.discrete_names)
 
 """
@@ -140,9 +151,23 @@ num_discrete(m::HybridNB) = length(m.discrete_names)
 
 A constructor for both types of features
 """
+# function HybridNB{C <: Integer, N}(labels::Vector{C}, kdes_names::AbstractVector{N}, discrete_names::AbstractVector{N})
+#     c_kdes = Dict{C, Vector{InterpKDE}}()
+#     c_discrete = Dict{C, Vector{ePDF}}()
+#     priors = Dict{C, Float64}()
+#     classes = unique(labels)
+#     A = 1.0/float(length(labels))
+#     for class in classes
+#         priors[class] = A*float(sum(labels .== class))
+#         c_kdes[class] = Vector{InterpKDE}(length(kdes_names))
+#         c_discrete[class] = Vector{ePDF}(length(discrete_names))
+#     end
+#     HybridNB{C, N}(c_kdes, kdes_names, c_discrete, discrete_names, classes, priors)
+# end
+
 function HybridNB{C <: Integer, N}(labels::Vector{C}, kdes_names::AbstractVector{N}, discrete_names::AbstractVector{N})
-    c_kdes = Dict{C, Vector{InterpKDE}}()
-    c_discrete = Dict{C, Vector{ePDF}}()
+    c_kdes = Dict{C, Dict{N, InterpKDE}}()
+    c_discrete = Dict{C, Dict{N, ePDF}}()
     priors = Dict{C, Float64}()
     classes = unique(labels)
     A = 1.0/float(length(labels))
@@ -153,6 +178,7 @@ function HybridNB{C <: Integer, N}(labels::Vector{C}, kdes_names::AbstractVector
     end
     HybridNB{C, N}(c_kdes, kde_names, c_discrete, discrete_names, classes, priors)
 end
+
 
 
 """
