@@ -135,7 +135,12 @@ end
 num_kdes(m::HybridNB) = length(m.kde_names)
 num_discrete(m::HybridNB) = length(m.discrete_names)
 
-function HybridNB{C, N}(labels::AbstractVector{C}, kde_names::AbstractVector{N}, discrete_names::AbstractVector{N})
+"""
+    HybridNB(labels::Vector{Int64}, num_kdes::Int64, num_discrete::Int64) -> model_h
+
+A constructor for both types of features
+"""
+function HybridNB{C <: Integer, N}(labels::Vector{C}, kdes_names::AbstractVector{N}, discrete_names::AbstractVector{N})
     c_kdes = Dict{C, Vector{InterpKDE}}()
     c_discrete = Dict{C, Vector{ePDF}}()
     priors = Dict{C, Float64}()
@@ -149,9 +154,14 @@ function HybridNB{C, N}(labels::AbstractVector{C}, kde_names::AbstractVector{N},
     HybridNB{C, N}(c_kdes, kde_names, c_discrete, discrete_names, classes, priors)
 end
 
-# Initialize with continuous features
-function HybridNB{C, N}(labels::AbstractVector{C}, kde_names::AbstractVector{N})
-    return HybridNB(labels, kde_names, Vector{N}())
+
+"""
+    HybridNB(labels::Vector{Int64}, num_kdes::Int) -> model_h
+
+A constructor for continuous features only
+"""
+function HybridNB{C, N}(labels::AbstractVector{C}, kdes_names::AbstractVector{N})
+    return HybridNB(labels, kdes_names, Vector{N}())
 end
 
 # Initialize with the number of continuous and discrete features

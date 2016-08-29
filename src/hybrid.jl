@@ -32,6 +32,7 @@ end
 
 """computes log[P(x⃗ⁿ|c)] ≈ ∑ᵢ log[p(xⁿᵢ|c)] """
 function sum_log_x_given_c!{T <: AbstractFloat, U <: Integer}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}}, c)
+    f_prob = zeros(num_kdes(m) + num_discrete(m), num_samples(m, continuous_features, discrete_features))
     for i = 1:num_samples(m, continuous_features, discrete_features)
 
         for j = 1:num_kdes(m)
@@ -43,16 +44,17 @@ function sum_log_x_given_c!{T <: AbstractFloat, U <: Integer}(class_prob::Vector
         end
 
         for j = 1:num_discrete(m)
-            if isnan(continuous_features[j][i])
+            if isnan(discrete_features[j][i])
                 feature_prob[num_kdes(m)+j] = NaN
             else
                 feature_prob[num_kdes(m)+j] = probability(m.c_discrete[c][j], discrete_features[j][i])
             end
         end
-
+        f_prob[:, i] = feature_prob
         sel = isfinite(feature_prob)
         class_prob[i] = sum(log(feature_prob[sel]))
     end
+    return f_prob
 end
 
 
@@ -76,12 +78,14 @@ function predict_logprobs{T <: AbstractFloat, U <: Integer}(m::HybridNB, continu
     n_samples = num_samples(m, continuous_features, discrete_features)
     log_probs_per_class = zeros(length(m.classes) ,n_samples)
     feature_prob = Vector{Float64}(num_kdes(m) + num_discrete(m))
+    feature_probilities = []
     for (i, c) in enumerate(m.classes)
         class_prob = Vector{Float64}(n_samples)
-        sum_log_x_given_c!(class_prob, feature_prob, m, continuous_features, discrete_features, c)
+        p = sum_log_x_given_c!(class_prob, feature_prob, m, continuous_features, discrete_features, c)
         log_probs_per_class[i, :] = class_prob .+ log(m.priors[c])
+        push!(feature_probilities, p)
     end
-    return log_probs_per_class
+    return log_probs_per_class, feature_probilities
 end
 
 
@@ -92,7 +96,7 @@ Predict log-probabilities for the input features.
 Returns tuples of predicted class and its log-probability estimate.
 """
 function predict_proba{T <: AbstractFloat, U <: Integer}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
-    logprobs = predict_logprobs(m, continuous_features, discrete_features)
+    logprobs, feature_probilities = predict_logprobs(m, continuous_features, discrete_features)
     n_samples = num_samples(m, continuous_features, discrete_features)
     predictions = Array(Tuple{eltype(m.classes), Float64}, n_samples)
     for i = 1:n_samples
@@ -116,6 +120,7 @@ end
 Predict hybrid naive bayes for continuos featuers only
 """
 function predict{T <: AbstractFloat, U <: Integer}(m::HybridNB, continuous_features::Vector{Vector{T}}, discrete_features::Vector{Vector{U}})
+    @show "predicting"
     return [k for (k,v) in predict_proba(m, continuous_features, discrete_features)]
 end
 
