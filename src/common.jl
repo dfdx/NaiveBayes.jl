@@ -32,7 +32,6 @@ function restructure_matrix{T <: Number}(M::Matrix{T})
 end
 
 
-
 function ensure_data_size(X, y)
     @assert(size(X, 2) == length(y),
             "Number of observations in X ($(size(X, 2))) is not equal to " *
