@@ -28,14 +28,13 @@ function train{C, T<: AbstractFloat, U <: Integer, N}(::Type{HybridNB}, continuo
 end
 
 
-
 """
     fit(m::HybridNB, f_c::Matrix{Float64}, labels::Vector{Int64})
 
 Train NB model with continuous features only
 """
 function fit{C, T<: AbstractFloat}(model::HybridNB, continuous_features::Matrix{T}, labels::Vector{C})
-    discrete_features = Vector{Vector{Int64}}()
+    discrete_features = Dict{Symbol, Vector{Int64}}()
     return fit(model, restructure_matrix(continuous_features), discrete_features, labels)
 end
 
@@ -123,7 +122,7 @@ end
 """ Predict kde naive bayes for continuos featuers only""" # TODO: remove this
 function predict{T <: Number}(m::HybridNB, X::Matrix{T})
     eltype(X) <: AbstractFloat || throw("Continuous features must be floats!")
-    return predict(m, restructure_matrix(X), Vector{Vector{Int}}())
+    return predict(m, restructure_matrix(X), Dict{Symbol, Vector{Int}}())
 end
 
 """
