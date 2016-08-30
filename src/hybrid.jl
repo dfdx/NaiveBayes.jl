@@ -41,7 +41,6 @@ end
 
 """computes log[P(x⃗ⁿ|c)] ≈ ∑ᵢ log[p(xⁿᵢ|c)] """
 function sum_log_x_given_c!{T <: AbstractFloat, U <: Integer, N}(class_prob::Vector{Float64}, feature_prob::Vector{Float64}, m::HybridNB, continuous_features::Dict{N, Vector{T}}, discrete_features::Dict{N, Vector{U}}, c)
-    f_prob = zeros(num_kdes(m) + num_discrete(m), num_samples(m, continuous_features, discrete_features))
     for i = 1:num_samples(m, continuous_features, discrete_features)
         for (j, name) in enumerate(keys(continuous_features))
             x_i = continuous_features[name][i]
@@ -60,11 +59,9 @@ function sum_log_x_given_c!{T <: AbstractFloat, U <: Integer, N}(class_prob::Vec
                 feature_prob[num_kdes(m)+j] = probability(m.c_discrete[c][name], x_i)
             end
         end
-        f_prob[:, i] = feature_prob
         sel = isfinite(feature_prob)
         class_prob[i] = sum(log(feature_prob[sel]))
     end
-    return f_prob
 end
 
 
@@ -89,14 +86,12 @@ function predict_logprobs{T <: AbstractFloat, U <: Integer, N}(m::HybridNB, cont
     n_samples = num_samples(m, continuous_features, discrete_features)
     log_probs_per_class = zeros(length(m.classes) ,n_samples)
     feature_prob = Vector{Float64}(num_kdes(m) + num_discrete(m))
-    feature_probilities = []
     for (i, c) in enumerate(m.classes)
         class_prob = Vector{Float64}(n_samples)
-        p = sum_log_x_given_c!(class_prob, feature_prob, m, continuous_features, discrete_features, c)
+        sum_log_x_given_c!(class_prob, feature_prob, m, continuous_features, discrete_features, c)
         log_probs_per_class[i, :] = class_prob .+ log(m.priors[c])
-        push!(feature_probilities, p)
     end
-    return log_probs_per_class, feature_probilities
+    return log_probs_per_class
 end
 
 
@@ -107,7 +102,7 @@ Predict log-probabilities for the input features.
 Returns tuples of predicted class and its log-probability estimate.
 """
 function predict_proba{T <: AbstractFloat, U <: Integer, N}(m::HybridNB, continuous_features::Dict{N, Vector{T}}, discrete_features::Dict{N, Vector{U}})
-    logprobs, feature_probilities = predict_logprobs(m, continuous_features, discrete_features)
+    logprobs = predict_logprobs(m, continuous_features, discrete_features)
     n_samples = num_samples(m, continuous_features, discrete_features)
     predictions = Array(Tuple{eltype(m.classes), Float64}, n_samples)
     for i = 1:n_samples
