@@ -1,4 +1,5 @@
 
+using Base.LinAlg
 using Base.BLAS
 
 # type for collecting data statistics incrementally
