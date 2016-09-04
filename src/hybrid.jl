@@ -141,11 +141,10 @@ function write_model{S <: AbstractString}(model::HybridNB, filename::S)
         name_type = eltype(keys(model.c_kdes[model.classes[1]]))
         f["NameType"] = "$name_type"
         info("Writing a model with names of type $name_type")
-        grp = g_create(f, "Classes")
-        grp["Label"] = model.classes
-        grp["Prior"] = collect(values(model.priors))
+        f["Labels"] = model.classes
         for c in model.classes
             grp = g_create(f, "$c")
+            grp["Prior"] = model.priors[c]
             sub = g_create(grp, "Discrete")
             for (name, discrete) in model.c_discrete[c]
                 f_grp = g_create(sub, "$name")
@@ -174,14 +173,13 @@ end
 function load_model{S <: AbstractString}(filename::S)
     model = h5open(filename, "r") do f
         N = read(f["NameType"]) == "Symbol" ? Symbol : AbstractString
-        classes = read(f["Classes/Label"])
+        classes = read(f["Labels"])
         C = eltype(classes)
         priors = Dict{C, Float64}()
-        [priors[k] =v for (k,v) in zip(classes, read(f["Classes/Prior"]))]
-
         kdes = Dict{C, Dict{N, InterpKDE}}()
         discrete = Dict{C, Dict{N, ePDF}}()
         for c in classes
+            priors[c] = read(f["$c"]["Prior"])
             kdes[c] = Dict{N, InterpKDE}()
             for (name, dist) in read(f["$c"]["Continuous"])
                 kdes[c][N(name)] = InterpKDE(UnivariateKDE(to_range(dist["x"]), dist["density"]), eps(Float64), InterpLinear)
