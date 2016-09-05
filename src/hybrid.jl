@@ -44,20 +44,12 @@ function sum_log_x_given_c!{T <: AbstractFloat, U <: Integer, N}(class_prob::Vec
     for i = 1:num_samples(m, continuous_features, discrete_features)
         for (j, name) in enumerate(keys(continuous_features))
             x_i = continuous_features[name][i]
-            if isnan(x_i)
-                feature_prob[j] = NaN
-            else
-                feature_prob[j] = pdf(m.c_kdes[c][name], x_i)
-            end
+            feature_prob[j] = isnan(x_i) ? NaN : pdf(m.c_kdes[c][name], x_i)
         end
 
         for (j, name) in enumerate(keys(discrete_features))
             x_i = discrete_features[name][i]
-            if isnan(x_i)
-                feature_prob[num_kdes(m)+j] = NaN
-            else
-                feature_prob[num_kdes(m)+j] = probability(m.c_discrete[c][name], x_i)
-            end
+            feature_prob[num_kdes(m)+j] = isnan(x_i) ? NaN : probability(m.c_discrete[c][name], x_i)
         end
         sel = isfinite(feature_prob)
         class_prob[i] = sum(log(feature_prob[sel]))
@@ -66,14 +58,14 @@ end
 
 
 """ compute the number of samples """
-function num_samples{T <: AbstractFloat, U <: Integer, N}(m::HybridNB, continuous_features::Dict{N, Vector{T}}, discrete_features::Dict{N, Vector{U}}) # TODO: this is a bit strange
+function num_samples{T <: AbstractFloat, U <: Integer, N}(m::HybridNB, continuous_features::Dict{N, Vector{T}}, discrete_features::Dict{N, Vector{U}})
     if length(keys(continuous_features)) > 0
         return length(continuous_features[collect(keys(continuous_features))[1]])
-    elseif length(keys(discrete_features)) > 0
-        return length(discrete_features[collect(keys(discrete_features))[1]])
-    else
-        return 0
     end
+    if length(keys(discrete_features)) > 0
+        return length(discrete_features[collect(keys(discrete_features))[1]])
+    end
+    return 0
 end
 
 

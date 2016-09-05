@@ -78,7 +78,7 @@ end
         compare_models!(model, m2)
 
 
-        #testing reading adn writing the model file with Symbols
+        #testing reading and writing the model file with Symbols
         m3 = HybridNB(y)
         fit(m3, X, y)
         @test all(predict(m3, X) .== y)
