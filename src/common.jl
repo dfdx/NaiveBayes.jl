@@ -1,32 +1,32 @@
 ######################################
 #### common naive Bayes functions ####
 ######################################
-
 """
-    to_matrix(V::Vector{Vector}}) -> M::Matrix
+    to_matrix(D::Dict{Symbol, Vector}}) -> M::Matrix
 
-convert a vector of vector into a matrix
+convert a dictionary of vectors into a matrix
 """
-function to_matrix{T <: Number}(V::Vector{Vector{T}})
-    n_lines = length(V)
-    n_lines < 1  && throw(ArgumentError("Empty input"))
-    X = zeros(n_lines, length(V[1]))
-    for i=1:n_lines
-        X[i, :] = V[i]
+function to_matrix{T <: Number, N}(V::Dict{N, Vector{T}})
+    n_features = length(V)
+    n_features < 1  && throw(ArgumentError("Empty input"))
+    X = zeros(n_features, length(V[collect(keys(V))[1]]))
+    for (i, f) in enumerate(values(V))
+        X[i, :] = f
     end
     return X
 end
 
+
 """
-    restructure_matrix(M::Matrix) -> V::Vector{Vector}
+    restructure_matrix(M::Matrix) -> V::Dict{Symbol, Vector}
 
 Restructure a matrix as vector of vectors
 """
 function restructure_matrix{T <: Number}(M::Matrix{T})
     d, n = size(M)
-    V = Vector{Vector{eltype(M)}}(d)
+    V = Dict{Symbol, Vector{eltype(M)}}()
     for i=1:d
-        V[i] = vec(M[i, :])
+        V[Symbol("x$i")] = vec(M[i, :])
     end
     return V
 end
