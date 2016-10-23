@@ -14,7 +14,7 @@ y = [species for species in iris[:, 5]]
 
 # how much data use for training
 train_frac = 0.9
-k = floor(Int, train_frac * n))
+k = floor(Int, train_frac * n)
 idxs = randperm(n)
 train = idxs[1:k]
 test = idxs[k+1:end]

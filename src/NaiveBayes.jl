@@ -5,6 +5,7 @@ using HDF5
 using KernelDensity
 using Grid
 using StatsBase
+import StatsBase: fit, predict
 
 export NBModel,
         MultinomialNB,
