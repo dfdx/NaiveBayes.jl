@@ -14,15 +14,15 @@ y = [species for species in iris[:, 5]]
 
 # how much data use for training
 train_frac = 0.9
-k = round(Int, floor(train_frac * n))
+k = floor(Int, train_frac * n))
 idxs = randperm(n)
 train = idxs[1:k]
 test = idxs[k+1:end]
 
 model = GaussianNB(unique(y), p)
-NaiveBayes.fit(model, X[:, train], y[train])
+fit(model, X[:, train], y[train])
 
-accuracy = countnz(NaiveBayes.predict(model, X[:,test]) .== y[test]) / countnz(test)
+accuracy = countnz(predict(model, X[:,test]) .== y[test]) / countnz(test)
 println("Accuracy: $accuracy")
 
 # Example 2
@@ -31,6 +31,6 @@ n_obs = 100
 m = GaussianNB([:a, :b, :c], 5)
 X = randn(5, n_obs)
 y = sample([:a, :b, :c], n_obs)
-NaiveBayes.fit(m, X, y)
-accuracy = sum(NaiveBayes.predict(m, X) .== y) / n_obs
+fit(m, X, y)
+accuracy = sum(predict(m, X) .== y) / n_obs
 println("Accuracy: $accuracy")
