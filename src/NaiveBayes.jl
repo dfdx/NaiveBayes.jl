@@ -3,11 +3,11 @@ module NaiveBayes
 using Distributions
 using HDF5
 using KernelDensity
-using Grid
+using Interpolations
 using StatsBase
 import StatsBase: fit, predict
 
-export NBModel,
+export  NBModel,
         MultinomialNB,
         GaussianNB,
         KernelNB,
