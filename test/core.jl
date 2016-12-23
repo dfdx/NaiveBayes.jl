@@ -72,10 +72,13 @@ end
         @test all(y_h .== labels[end-Np:end])
 
         mkdir("tmp")
-        write_model(model, "tmp/test.h5")
-        m2 = load_model("tmp/test.h5")
-        rm("tmp", recursive=true)
-        compare_models!(model, m2)
+        try
+            write_model(model, "tmp/test.h5")
+            m2 = load_model("tmp/test.h5")
+            compare_models!(model, m2)
+        finally
+            rm("tmp", recursive=true)
+        end
 
 
         #testing reading and writing the model file with Symbols
@@ -84,10 +87,13 @@ end
         @test all(predict(m3, X) .== y)
 
         mkdir("tmp")
-        write_model(m3, "tmp/test.h5")
-        m4 = load_model("tmp/test.h5")
-        rm("tmp", recursive=true)
-        compare_models!(m3, m4)
+        try
+            write_model(m3, "tmp/test.h5")
+            m4 = load_model("tmp/test.h5")
+            compare_models!(m3, m4)
+        finally
+            rm("tmp", recursive=true)
+        end
     end
 
     @testset "Restructure features" begin

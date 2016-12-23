@@ -10,7 +10,7 @@ function fit{C, T<: AbstractFloat, U <: Integer, N}(model::HybridNB, continuous_
         model.priors[class] = A*float(length(inds))
         for (name, feature) in continuous_features
             f_data = feature[inds]
-            model.c_kdes[class][name] = InterpKDE(kde(f_data[isfinite(f_data)]), eps(Float64), InterpLinear)
+            model.c_kdes[class][name] = InterpKDE(kde(f_data[isfinite(f_data)]), eps(Float64),  BSpline(Linear()), OnGrid())
         end
         for (name, feature) in discrete_features
             f_data = feature[inds]
@@ -121,11 +121,16 @@ function predict{T <: AbstractFloat, U <: Integer, N}(m::HybridNB, continuous_fe
     return [k for (k,v) in predict_proba(m, continuous_features, discrete_features)]
 end
 
-# TODO remove this once KernelDensity.jl pull request #27 is merged/tagged.
-function KernelDensity.InterpKDE{IT<:Grid.InterpType}(k::UnivariateKDE, bc::Number, it::Type{IT}=InterpQuadratic)
-    g = CoordInterpGrid(k.x, k.density, bc, it)
-    InterpKDE(k, g)
+# TODO Temporary fix to add extrapolation when outside (Remove once PR in KernelDensity.jl is merged)
+import KernelDensity: InterpKDE
+import Interpolations: ExtrapDimSpec
+function InterpKDE(kde::UnivariateKDE, extrap::Union{ExtrapDimSpec, Number}, opts...)
+    itp_u = interpolate(kde.density, opts...)
+    itp_u = extrapolate(itp_u, extrap)
+    itp = scale(itp_u, kde.x)
+    InterpKDE{typeof(kde),typeof(itp)}(kde, itp)
 end
+InterpKDE(kde::UnivariateKDE) = InterpKDE(kde, NaN, BSpline(Quadratic(Line())), OnGrid())
 
 
 function write_model{S <: AbstractString}(model::HybridNB, filename::S)
@@ -174,7 +179,7 @@ function load_model{S <: AbstractString}(filename::S)
             priors[c] = read(f["$c"]["Prior"])
             kdes[c] = Dict{N, InterpKDE}()
             for (name, dist) in read(f["$c"]["Continuous"])
-                kdes[c][N(name)] = InterpKDE(UnivariateKDE(to_range(dist["x"]), dist["density"]), eps(Float64), InterpLinear)
+                kdes[c][N(name)] = InterpKDE(UnivariateKDE(to_range(dist["x"]), dist["density"]), eps(Float64), BSpline(Linear()), OnGrid())
             end
             discrete[c] = Dict{N, ePDF}()
             for (name, dist) in read(f["$c"]["Discrete"])
