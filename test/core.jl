@@ -71,13 +71,10 @@ end
         y_h = predict(model, predict_c, predict_d)
         @test all(y_h .== labels[end-Np:end])
 
-        mkdir("tmp")
-        try
-            write_model(model, "tmp/test.h5")
-            m2 = load_model("tmp/test.h5")
+        mktempdir() do dir
+            write_model(model, joinpath(dir, "test.h5"))
+            m2 = load_model(joinpath(dir, "test.h5"))
             compare_models!(model, m2)
-        finally
-            rm("tmp", recursive=true)
         end
 
 
@@ -86,13 +83,10 @@ end
         fit(m3, X, y)
         @test all(predict(m3, X) .== y)
 
-        mkdir("tmp")
-        try
-            write_model(m3, "tmp/test.h5")
-            m4 = load_model("tmp/test.h5")
+        mktempdir() do dir
+            write_model(m3, joinpath(dir, "test.h5"))
+            m4 = load_model(joinpath(dir, "test.h5"))
             compare_models!(m3, m4)
-        finally
-            rm("tmp", recursive=true)
         end
     end
 
