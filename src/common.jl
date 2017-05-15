@@ -39,7 +39,7 @@ function ensure_data_size(X, y)
 end
 
 function logprob_c{C}(m::NBModel, c::C)
-    return log(m.c_counts[c] / m.n_obs)
+    return log.(m.c_counts[c] / m.n_obs)
 end
 
 """Predict log probabilities for all classes"""
@@ -67,7 +67,7 @@ end
 function predict_proba{V<:Number}(m::NBModel, X::Matrix{V})
     C = eltype(keys(m.c_counts))
     classes, logprobs = predict_logprobs(m, X)
-    predictions = Array(Tuple{C, Float64}, size(X, 2))
+    predictions = Array{Tuple{C, Float64}}(size(X, 2))
     for j=1:size(X, 2)
         maxprob_idx = indmax(logprobs[:, j])
         c = classes[maxprob_idx]

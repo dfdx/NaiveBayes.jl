@@ -9,13 +9,13 @@ Inherited classes should have at least following fields:
  c_counts::Dict{C, Int64} - count of ocurrences of each class
  n_obs::Int64             - total number of observations
 """
-abstract NBModel{C}
+@compat abstract type NBModel{C} end
 
 #####################################
 #####  Multinomial Naive Bayes  #####
 #####################################
 
-type MultinomialNB{C} <: NBModel
+@compat mutable struct MultinomialNB{C} <: NBModel{C}
     c_counts::Dict{C, Int64}           # count of ocurrences of each class
     x_counts::Dict{C, Vector{Number}}  # count/sum of occurrences of each var
     x_totals::Vector{Number}           # total occurrences of each var
@@ -54,7 +54,7 @@ end
 ######  Gaussian Naive Bayes  #######
 #####################################
 
-type GaussianNB{C} <: NBModel
+@compat mutable struct GaussianNB{C} <: NBModel{C}
     c_counts::Dict{C, Int64}           # count of ocurrences of each class
     c_stats::Dict{C, DataStats}        # aggregative data statistics
     gaussians::Dict{C, MvNormal}        # precomputed distribution
@@ -81,7 +81,7 @@ end
 #####  Hybrid Naive Bayes       #####
 #####################################
 """ a wrapper around key value pairs for a discrete probability distribution """
-immutable ePDF{C <: Associative}
+@compat struct ePDF{C <: Associative}
     pairs::C
 end
 
@@ -123,7 +123,7 @@ HybridNB(labels::AbstractVector, num_kde::Int, num_discrete::Int)
 * `num_discrete` : Number of discrete features
 
 """
-immutable HybridNB{C <: Integer, N}
+@compat struct HybridNB{C <: Integer, N}
     c_kdes::Dict{C, Dict{N, InterpKDE}}
     c_discrete::Dict{C, Dict{N, ePDF}}
     classes::Vector{C}

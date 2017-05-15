@@ -5,6 +5,7 @@ using HDF5
 using KernelDensity
 using Interpolations
 using StatsBase
+using Compat
 import StatsBase: fit, predict
 
 export  NBModel,

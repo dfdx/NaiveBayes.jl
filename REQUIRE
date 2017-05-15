@@ -1,6 +1,7 @@
 julia 0.4
-Distributions
-HDF5
-Interpolations
-KernelDensity 0.3.0
-StatsBase
+Distributions 0.11
+HDF5 0.7.2
+Interpolations 0.5
+KernelDensity 0.3
+StatsBase 0.12
+Compat 0.24

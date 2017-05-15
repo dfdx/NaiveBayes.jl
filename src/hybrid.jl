@@ -10,11 +10,11 @@ function fit{C, T<: AbstractFloat, U <: Integer, N}(model::HybridNB, continuous_
         model.priors[class] = A*float(length(inds))
         for (name, feature) in continuous_features
             f_data = feature[inds]
-            model.c_kdes[class][name] = InterpKDE(kde(f_data[isfinite(f_data)]), eps(Float64),  BSpline(Linear()), OnGrid())
+            model.c_kdes[class][name] = InterpKDE(kde(f_data[isfinite.(f_data)]), eps(Float64),  BSpline(Linear()), OnGrid())
         end
         for (name, feature) in discrete_features
             f_data = feature[inds]
-            model.c_discrete[class][name] = ePDF(f_data[isfinite(f_data)])
+            model.c_discrete[class][name] = ePDF(f_data[isfinite.(f_data)])
         end
     end
     return model
@@ -51,8 +51,8 @@ function sum_log_x_given_c!{T <: AbstractFloat, U <: Integer, N}(class_prob::Vec
             x_i = discrete_features[name][i]
             feature_prob[num_kdes(m)+j] = isnan(x_i) ? NaN : probability(m.c_discrete[c][name], x_i)
         end
-        sel = isfinite(feature_prob)
-        class_prob[i] = sum(log(feature_prob[sel]))
+        sel = isfinite.(feature_prob)
+        class_prob[i] = sum(log.(feature_prob[sel]))
     end
 end
 
@@ -81,7 +81,7 @@ function predict_logprobs{T <: AbstractFloat, U <: Integer, N}(m::HybridNB, cont
     for (i, c) in enumerate(m.classes)
         class_prob = Vector{Float64}(n_samples)
         sum_log_x_given_c!(class_prob, feature_prob, m, continuous_features, discrete_features, c)
-        log_probs_per_class[i, :] = class_prob .+ log(m.priors[c])
+        log_probs_per_class[i, :] = class_prob .+ log.(m.priors[c])
     end
     return log_probs_per_class
 end
@@ -96,7 +96,7 @@ Returns tuples of predicted class and its log-probability estimate.
 function predict_proba{T <: AbstractFloat, U <: Integer, N}(m::HybridNB, continuous_features::Dict{N, Vector{T}}, discrete_features::Dict{N, Vector{U}})
     logprobs = predict_logprobs(m, continuous_features, discrete_features)
     n_samples = num_samples(m, continuous_features, discrete_features)
-    predictions = Array(Tuple{eltype(m.classes), Float64}, n_samples)
+    predictions = Array{Tuple{eltype(m.classes), Float64}}(n_samples)
     for i = 1:n_samples
         maxprob_idx = indmax(logprobs[:, i])
         c = m.classes[maxprob_idx]
@@ -127,7 +127,7 @@ import Interpolations: ExtrapDimSpec
 function InterpKDE(kde::UnivariateKDE, extrap::Union{ExtrapDimSpec, Number}, opts...)
     itp_u = interpolate(kde.density, opts...)
     itp_u = extrapolate(itp_u, extrap)
-    itp = scale(itp_u, kde.x)
+    itp = Interpolations.scale(itp_u, kde.x)
     InterpKDE{typeof(kde),typeof(itp)}(kde, itp)
 end
 InterpKDE(kde::UnivariateKDE) = InterpKDE(kde, NaN, BSpline(Quadratic(Line())), OnGrid())
