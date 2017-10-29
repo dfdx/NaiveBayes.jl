@@ -30,7 +30,7 @@ end
 function logprob_x_given_c{C}(m::GaussianNB, X::Matrix{Float64}, c::C)
     ## x_priors_for_c = m.x_counts[c] ./ m.x_totals
     ## x_probs_given_c = x_priors_for_c .^ x
-    ## logprob = sum(log(x_probs_given_c))
+    ## logprob = sum(log.(x_probs_given_c))
     ## return logprob
     return logpdf(m.gaussians[c], X)
 end

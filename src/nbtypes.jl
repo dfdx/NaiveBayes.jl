@@ -9,13 +9,13 @@ Inherited classes should have at least following fields:
  c_counts::Dict{C, Int64} - count of ocurrences of each class
  n_obs::Int64             - total number of observations
 """
-abstract NBModel{C}
+abstract type NBModel{C} end
 
 #####################################
 #####  Multinomial Naive Bayes  #####
 #####################################
 
-type MultinomialNB{C} <: NBModel
+mutable struct MultinomialNB{C} <: NBModel{C}
     c_counts::Dict{C, Int64}           # count of ocurrences of each class
     x_counts::Dict{C, Vector{Number}}  # count/sum of occurrences of each var
     x_totals::Vector{Number}           # total occurrences of each var
@@ -54,7 +54,7 @@ end
 ######  Gaussian Naive Bayes  #######
 #####################################
 
-type GaussianNB{C} <: NBModel
+mutable struct GaussianNB{C} <: NBModel{C}
     c_counts::Dict{C, Int64}           # count of ocurrences of each class
     c_stats::Dict{C, DataStats}        # aggregative data statistics
     gaussians::Dict{C, MvNormal}        # precomputed distribution

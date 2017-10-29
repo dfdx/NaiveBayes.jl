@@ -83,11 +83,11 @@ end
         fit(m3, X, y)
         @test all(predict(m3, X) .== y)
 
-        mktempdir() do dir
-            write_model(m3, joinpath(dir, "test.h5"))
-            m4 = load_model(joinpath(dir, "test.h5"))
-            compare_models!(m3, m4)
-        end
+        # mktempdir() do dir
+        #     write_model(m3, joinpath(dir, "test.h5"))
+        #     m4 = load_model(joinpath(dir, "test.h5"))
+        #     compare_models!(m3, m4)
+        # end
     end
 
     @testset "Restructure features" begin

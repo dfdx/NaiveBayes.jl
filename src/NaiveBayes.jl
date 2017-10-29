@@ -1,12 +1,5 @@
 module NaiveBayes
 
-using Distributions
-using HDF5
-using KernelDensity
-using Interpolations
-using StatsBase
-import StatsBase: fit, predict
-
 export  NBModel,
         MultinomialNB,
         GaussianNB,
@@ -23,10 +16,7 @@ export  NBModel,
         get_feature_names,
         train
 
-include("nbtypes.jl")
-include("common.jl")
-include("hybrid.jl")
-include("gaussian.jl")
-include("multinomial.jl")
+
+include("core.jl")
 
 end

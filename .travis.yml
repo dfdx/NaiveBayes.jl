@@ -1,10 +1,9 @@
 language: julia
 os:
-  - osx
   - linux
 julia:
-  - 0.4
-  - 0.5
+  - 0.6
+sudo: required  
 notifications:
   email: false
 before_install:
