@@ -10,7 +10,8 @@ function to_matrix{T <: Number, N}(V::Dict{N, Vector{T}})
     n_features = length(V)
     n_features < 1  && throw(ArgumentError("Empty input"))
     X = zeros(n_features, length(V[collect(keys(V))[1]]))
-    for (i, f) in enumerate(values(V))
+    for (k, f) in V
+        i = parse(Int, string(k)[2:end])
         X[i, :] = f
     end
     return X
@@ -39,7 +40,7 @@ function ensure_data_size(X, y)
 end
 
 function logprob_c{C}(m::NBModel, c::C)
-    return log(m.c_counts[c] / m.n_obs)
+    return log.(m.c_counts[c] / m.n_obs)
 end
 
 """Predict log probabilities for all classes"""
@@ -67,7 +68,7 @@ end
 function predict_proba{V<:Number}(m::NBModel, X::Matrix{V})
     C = eltype(keys(m.c_counts))
     classes, logprobs = predict_logprobs(m, X)
-    predictions = Array(Tuple{C, Float64}, size(X, 2))
+    predictions = Array{Tuple{C, Float64}}(size(X, 2))
     for j=1:size(X, 2)
         maxprob_idx = indmax(logprobs[:, j])
         c = classes[maxprob_idx]

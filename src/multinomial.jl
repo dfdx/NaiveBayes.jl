@@ -14,7 +14,7 @@ end
 function logprob_x_given_c{C}(m::MultinomialNB, x::Vector{Int64}, c::C)
     x_priors_for_c = m.x_counts[c] ./ m.x_totals
     x_probs_given_c = x_priors_for_c .^ x
-    logprob = sum(log(x_probs_given_c))
+    logprob = sum(log.(x_probs_given_c))
     return logprob
 end
 
@@ -22,6 +22,6 @@ end
 function logprob_x_given_c{C}(m::MultinomialNB, X::Matrix{Int64}, c::C)
     x_priors_for_c = m.x_counts[c] ./ m.x_totals
     x_probs_given_c = x_priors_for_c .^ X
-    logprob = sum(log(x_probs_given_c), 1)
+    logprob = sum(log.(x_probs_given_c), 1)
     return squeeze(logprob, 1)
 end
