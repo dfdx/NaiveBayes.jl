@@ -3,6 +3,7 @@ os:
   - linux
 julia:
   - 0.6
+sudo: required  
 notifications:
   email: false
 before_install:
