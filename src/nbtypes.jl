@@ -9,13 +9,13 @@ Inherited classes should have at least following fields:
  c_counts::Dict{C, Int64} - count of ocurrences of each class
  n_obs::Int64             - total number of observations
 """
-abstract NBModel{C}
+abstract type NBModel{C} end
 
 #####################################
 #####  Multinomial Naive Bayes  #####
 #####################################
 
-type MultinomialNB{C} <: NBModel
+mutable struct MultinomialNB{C} <: NBModel{C} 
     c_counts::Dict{C, Int64}           # count of ocurrences of each class
     x_counts::Dict{C, Vector{Number}}  # count/sum of occurrences of each var
     x_totals::Vector{Number}           # total occurrences of each var
@@ -34,7 +34,7 @@ alpha : Number (optional, default 1)
     Smoothing parameter. E.g. if alpha equals 1, each variable in each class
     is believed to have 1 observation by default
 """
-function MultinomialNB{C}(classes::Vector{C}, n_vars::Int64; alpha=1)
+function MultinomialNB(classes::Vector{C}, n_vars::Int64; alpha=1) where C 
     c_counts = Dict(zip(classes, ones(Int64, length(classes)) * alpha))
     x_counts = Dict{C, Vector{Int64}}()
     for c in classes
@@ -54,7 +54,7 @@ end
 ######  Gaussian Naive Bayes  #######
 #####################################
 
-type GaussianNB{C} <: NBModel
+mutable struct GaussianNB{C} <: NBModel{C}
     c_counts::Dict{C, Int64}           # count of ocurrences of each class
     c_stats::Dict{C, DataStats}        # aggregative data statistics
     gaussians::Dict{C, MvNormal}        # precomputed distribution
@@ -64,7 +64,7 @@ type GaussianNB{C} <: NBModel
 end
 
 
-function GaussianNB{C}(classes::Vector{C}, n_vars::Int64)
+function GaussianNB(classes::Vector{C}, n_vars::Int64) where C
     c_counts = Dict(zip(classes, zeros(Int64, length(classes))))
     c_stats = Dict(zip(classes, [DataStats(n_vars, 2) for i=1:length(classes)]))
     gaussians = Dict{C, MvNormal}()
@@ -81,15 +81,15 @@ end
 #####  Hybrid Naive Bayes       #####
 #####################################
 """ a wrapper around key value pairs for a discrete probability distribution """
-immutable ePDF{C <: Associative}
+struct ePDF{C <: AbstractDict}
     pairs::C
 end
 
 """ Constructor of ePDF """
-function ePDF{T <: Integer}(x::AbstractVector{T})
+function ePDF(x::AbstractVector{T}) where T <: Integer
     cnts = counts(x)
     ρ = map(Float64, cnts)/sum(cnts)
-    ρ[ρ .< eps(Float64)] = eps(Float64)
+    ρ[ρ .< eps(Float64)] .= eps(Float64)
     d = Dict{Int, Float64}()
     for (k,v) in zip(StatsBase.span(x), ρ)
         d[k]=v
@@ -123,7 +123,7 @@ HybridNB(labels::AbstractVector, num_kde::Int, num_discrete::Int)
 * `num_discrete` : Number of discrete features
 
 """
-immutable HybridNB{C <: Integer, N}
+struct HybridNB{C <: Integer, N}
     c_kdes::Dict{C, Dict{N, InterpKDE}}
     c_discrete::Dict{C, Dict{N, ePDF}}
     classes::Vector{C}
@@ -147,7 +147,7 @@ num_discrete(m::HybridNB) = num_features(m)[2]
 
 A constructor for both types of features
 """
-function HybridNB{C <: Integer, T}(labels::Vector{C}, ::Type{T}=Symbol)
+function HybridNB(labels::Vector{C}, ::Type{T}=Symbol) where {C <: Integer, T}
     c_kdes = Dict{C, Dict{T, InterpKDE}}()
     c_discrete = Dict{C, Dict{T, ePDF}}()
     priors = Dict{C, Float64}()

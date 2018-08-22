@@ -4,6 +4,7 @@ using Distributions
 using HDF5
 using KernelDensity
 using Interpolations
+using LinearAlgebra
 using StatsBase
 import StatsBase: fit, predict
 
