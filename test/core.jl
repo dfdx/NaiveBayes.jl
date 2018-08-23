@@ -1,3 +1,6 @@
+using Random
+using LinearAlgebra
+
 kde_names(m::HybridNB) = collect(keys(m.c_kdes[m.classes[1]]))
 discrete_names(m::HybridNB) = collect(keys(m.c_discrete[m.classes[1]]))
 
@@ -52,13 +55,13 @@ end
         N2 = 160000
         Np = 1000
 
-        srand(0)
+	Random.seed!(0)
 
         # test with names as Symbols
-        perm = randperm(N1+N2)
+        perm = Random.randperm(N1+N2)
         labels = [ones(Int, N1); zeros(Int, N2)][perm]
-        f_c1 = [0.35randn(N1); 3.0 + 0.2randn(N2)][perm]
-        f_c2 = [-4.0 + 0.35randn(N1); -3.0 + 0.2randn(N2)][perm]
+        f_c1 = [0.35randn(N1); 3.0 .+ 0.2randn(N2)][perm]
+        f_c2 = [-4.0 .+ 0.35randn(N1); -3.0 .+ 0.2randn(N2)][perm]
         f_d = [rand(1:10, N1); rand(12:25, N2)][perm]
 
         N = AbstractString

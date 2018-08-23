@@ -1,9 +1,9 @@
 
-using Base.BLAS
-using Base.LinAlg
+using LinearAlgebra
+
 
 # type for collecting data statistics incrementally
-type DataStats
+mutable struct DataStats
     x_sums::Vector{Float64}      # sum(x_i)
     cross_sums::Matrix{Float64}  # sum(x_i'*x_i) (lower-triangular matrix)
     n_obs::UInt64                # number of observations
@@ -27,21 +27,21 @@ end
 # data samples to collect aggregative statistics.
 function updatestats(dstats::DataStats, X::Matrix{Float64})
     trans = dstats.obs_axis == 1 ? 'T' : 'N'
-    axpy!(1.0, sum(X, dstats.obs_axis), dstats.x_sums)
-    syrk!('L', trans, 1.0, X, 1.0, dstats.cross_sums)
+    axpy!(1.0, sum(X, dims=dstats.obs_axis), dstats.x_sums)
+    BLAS.syrk!('L', trans, 1.0, X, 1.0, dstats.cross_sums)
     dstats.n_obs += size(X, dstats.obs_axis)
     return dstats
 end
 
-function Base.mean(dstats::DataStats)
+function mean(dstats::DataStats)
     @assert (dstats.n_obs >= 1) "At least 1 observations is requied"
     return dstats.x_sums ./ dstats.n_obs
 end
 
-function Base.cov(dstats::DataStats)
+function cov(dstats::DataStats)
     @assert (dstats.n_obs >= 2) "At least 2 observations are requied"
     mu = mean(dstats)
     C = (dstats.cross_sums - dstats.n_obs * (mu*mu')) / (dstats.n_obs - 1)
-    Base.LinAlg.copytri!(C, 'L')
+    LinearAlgebra.copytri!(C, 'L')
     return C
 end
