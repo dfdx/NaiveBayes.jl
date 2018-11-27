@@ -1,6 +1,7 @@
 language: julia
 os:
   - linux
+  - osx
 julia:
   - 0.7 
   - 1.0
@@ -10,6 +11,9 @@ addons:
   apt:
     packages:
     - hdf5-tools
+  homebrew:
+    packages:
+    - hdf5
 before_install:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
