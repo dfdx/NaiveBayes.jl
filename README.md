@@ -16,7 +16,7 @@ Since `GaussianNB` models multivariate distribution, it's not really a "naive" c
 
 As a subproduct, this package also provides a `DataStats` type that may be used for incremental calculation of common data statistics such as mean and covariance matrix. See `test/datastatstest.jl` for a usage example.
 
-###Examples:
+### Examples:
 1. Continuous and discrete features as `Dict{Symbol, Vector}}`
 
     ```julia
