@@ -6,8 +6,8 @@ include("datastats.jl")
 """
 Base type for Naive Bayes models.
 Inherited classes should have at least following fields:
- c_counts::Dict{C, Int64} - count of ocurrences of each class
- n_obs::Int64             - total number of observations
+ c_counts::Dict{C, Float64} - count of ocurrences of each class
+ n_obs::Float64             - total number of observations
 """
 abstract type NBModel{C} end
 
@@ -16,10 +16,10 @@ abstract type NBModel{C} end
 #####################################
 
 mutable struct MultinomialNB{C} <: NBModel{C} 
-    c_counts::Dict{C, Int64}           # count of ocurrences of each class
+    c_counts::Dict{C, Float64}           # count of ocurrences of each class
     x_counts::Dict{C, Vector{Number}}  # count/sum of occurrences of each var
     x_totals::Vector{Number}           # total occurrences of each var
-    n_obs::Int64                       # total number of seen observations
+    n_obs::Int                       # total number of seen observations
 end
 
 
@@ -28,17 +28,17 @@ Multinomial Naive Bayes classifier
 
 classes : array of objects
     Class names
-n_vars : Int64
+n_vars : Int
     Number of variables in observations
 alpha : Number (optional, default 1)
     Smoothing parameter. E.g. if alpha equals 1, each variable in each class
     is believed to have 1 observation by default
 """
-function MultinomialNB(classes::Vector{C}, n_vars::Int64; alpha=1) where C 
-    c_counts = Dict(zip(classes, ones(Int64, length(classes)) * alpha))
-    x_counts = Dict{C, Vector{Int64}}()
+function MultinomialNB(classes::Vector{C}, n_vars::Int; alpha=1) where C 
+    c_counts = Dict(zip(classes, ones(Float64, length(classes)) * alpha))
+    x_counts = Dict{C, Vector{Float64}}()
     for c in classes
-        x_counts[c] = ones(Int64, n_vars) * alpha
+        x_counts[c] = ones(Float64, n_vars) * alpha
     end
     x_totals = ones(Float64, n_vars) * alpha * length(c_counts)
     MultinomialNB{C}(c_counts, x_counts, x_totals, sum(x_totals))
@@ -55,17 +55,17 @@ end
 #####################################
 
 mutable struct GaussianNB{C} <: NBModel{C}
-    c_counts::Dict{C, Int64}           # count of ocurrences of each class
+    c_counts::Dict{C, Float64}           # count of ocurrences of each class
     c_stats::Dict{C, DataStats}        # aggregative data statistics
     gaussians::Dict{C, MvNormal}        # precomputed distribution
     # x_counts::Dict{C, Vector{Number}}  # ?? count/sum of occurrences of each var
     # x_totals::Vector{Number}           # ?? total occurrences of each var
-    n_obs::Int64                       # total number of seen observations
+    n_obs::Int                       # total number of seen observations
 end
 
 
-function GaussianNB(classes::Vector{C}, n_vars::Int64) where C
-    c_counts = Dict(zip(classes, zeros(Int64, length(classes))))
+function GaussianNB(classes::Vector{C}, n_vars::Int) where C
+    c_counts = Dict(zip(classes, zeros(Float64, length(classes))))
     c_stats = Dict(zip(classes, [DataStats(n_vars, 2) for i=1:length(classes)]))
     gaussians = Dict{C, MvNormal}()
     GaussianNB{C}(c_counts, c_stats, gaussians, 0)
@@ -141,9 +141,9 @@ num_kdes(m::HybridNB) = num_features(m)[1]
 num_discrete(m::HybridNB) = num_features(m)[2]
 
 """
-    HybridNB(labels::Vector{Int64}) -> model_h
+    HybridNB(labels::Vector{Float64}) -> model_h
 
-    HybridNB(labels::Vector{Int64}, AstractString) -> model_h
+    HybridNB(labels::Vector{Float64}, AstractString) -> model_h
 
 A constructor for both types of features
 """
