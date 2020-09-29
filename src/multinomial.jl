@@ -12,7 +12,7 @@ end
 
 """Calculate log P(x|C)"""
 function logprob_x_given_c(m::MultinomialNB, x::Vector{Int64}, c::C) where C
-    x_priors_for_c = m.x_counts[c] ./ m.x_totals
+    x_priors_for_c = m.x_counts[c] ./ sum(m.x_counts[c])
     x_probs_given_c = x_priors_for_c .^ x
     logprob = sum(log(x_probs_given_c))
     return logprob
@@ -20,7 +20,7 @@ end
 
 """Calculate log P(x|C)"""
 function logprob_x_given_c(m::MultinomialNB, X::Matrix{Int64}, c::C) where C
-    x_priors_for_c = m.x_counts[c] ./ m.x_totals
+    x_priors_for_c = m.x_counts[c] ./ sum(m.x_counts[c])
     x_probs_given_c = x_priors_for_c .^ X
     logprob = sum(log.(x_probs_given_c), dims=1)
     return dropdims(logprob, dims=1)
