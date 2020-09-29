@@ -1,7 +1,7 @@
 name = "NaiveBayes"
 uuid = "9bbee03b-0db5-5f46-924f-b5c9c21b8c60"
 authors = ["Anthony D. Blaom <anthony.blaom@gmail.com>"]
-version = "0.4.1"
+version = "0.4.2"
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
