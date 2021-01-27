@@ -16,7 +16,7 @@ function fit(model::HybridNB,
         model.priors[class] = A*float(length(inds))
         for (name, feature) in continuous_features
             f_data = feature[inds]
-            model.c_kdes[class][name] = InterpKDE(kde(f_data[isfinite.(f_data)]), eps(Float64),  BSpline(Linear()), OnGrid())
+            model.c_kdes[class][name] = InterpKDE(kde(f_data[isfinite.(f_data)]), eps(Float64),  BSpline(Linear()))
         end
         for (name, feature) in discrete_features
             f_data = feature[inds]
@@ -152,8 +152,6 @@ function InterpKDE(kde::UnivariateKDE, extrap::Union{ExtrapDimSpec, Number}, opt
     itp = Interpolations.scale(itp_u, kde.x)
     InterpKDE{typeof(kde),typeof(itp)}(kde, itp)
 end
-InterpKDE(kde::UnivariateKDE) = InterpKDE(kde, NaN, BSpline(Quadratic(Line())), OnGrid())
-
 
 function write_model(model::HybridNB, filename::S) where {S <: AbstractString}
     h5open(filename, "w") do f
@@ -202,7 +200,7 @@ function load_model(filename::S) where {S <: AbstractString}
             priors[c] = read(f["$c"]["Prior"])
             kdes[c] = Dict{N, InterpKDE}()
             for (name, dist) in read(f["$c"]["Continuous"])
-                kdes[c][fnc(name)] = InterpKDE(UnivariateKDE(to_range(dist["x"]), dist["density"]), eps(Float64), BSpline(Linear()), OnGrid())
+                kdes[c][fnc(name)] = InterpKDE(UnivariateKDE(to_range(dist["x"]), dist["density"]), eps(Float64), BSpline(Linear()))
             end
             discrete[c] = Dict{N, ePDF}()
             for (name, dist) in read(f["$c"]["Discrete"])
