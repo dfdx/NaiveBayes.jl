@@ -152,8 +152,6 @@ function InterpKDE(kde::UnivariateKDE, extrap::Union{ExtrapDimSpec, Number}, opt
     itp = Interpolations.scale(itp_u, kde.x)
     InterpKDE{typeof(kde),typeof(itp)}(kde, itp)
 end
-InterpKDE(kde::UnivariateKDE) = InterpKDE(kde, NaN, BSpline(Quadratic(Line())), OnGrid())
-
 
 function write_model(model::HybridNB, filename::S) where {S <: AbstractString}
     h5open(filename, "w") do f
