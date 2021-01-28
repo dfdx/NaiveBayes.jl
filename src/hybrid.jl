@@ -160,17 +160,17 @@ function write_model(model::HybridNB, filename::S) where {S <: AbstractString}
         @info("Writing a model with names of type $name_type")
         f["Labels"] = model.classes
         for c in model.classes
-            grp = g_create(f, "$c")
+            grp = create_group(f, "$c")
             grp["Prior"] = model.priors[c]
-            sub = g_create(grp, "Discrete")
+            sub = create_group(grp, "Discrete")
             for (name, discrete) in model.c_discrete[c]
-                f_grp = g_create(sub, "$name")
+                f_grp = create_group(sub, "$name")
                 f_grp["range"] = collect(keys(discrete.pairs))
                 f_grp["probability"] = collect(values(discrete.pairs))
             end
-            sub = g_create(grp, "Continuous")
+            sub = create_group(grp, "Continuous")
             for (name, continuous) in model.c_kdes[c]
-                f_grp = g_create(sub, "$name")
+                f_grp = create_group(sub, "$name")
                 f_grp["x"] = collect(continuous.kde.x)
                 f_grp["density"] = collect(continuous.kde.density)
             end
