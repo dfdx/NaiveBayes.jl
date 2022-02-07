@@ -1,4 +1,4 @@
-function fit(m::GaussianNB, X::Matrix{Float64}, y::Vector{C}) where C
+function fit(m::GaussianNB, X::MatrixContinuous, y::Vector{C}) where C
     ensure_data_size(X, y)
     # updatestats(m.dstats, X)
     # m.gaussian = MvNormal(mean(m.dstats), cov(m.dstats))
@@ -21,13 +21,13 @@ end
 
 
 """Calculate log P(x|C)"""
-function logprob_x_given_c(m::GaussianNB, x::Vector{Float64}, c::C) where C
+function logprob_x_given_c(m::GaussianNB, x::VectorContinuous, c::C) where C
     return logpdf(m.gaussians[c], x)
 end
 
 
 """Calculate log P(x|C)"""
-function logprob_x_given_c(m::GaussianNB, X::Matrix{Float64}, c::C) where C
+function logprob_x_given_c(m::GaussianNB, X::MatrixContinuous, c::C) where C
     ## x_priors_for_c = m.x_counts[c] ./ m.x_totals
     ## x_probs_given_c = x_priors_for_c .^ x
     ## logprob = sum(log(x_probs_given_c))
