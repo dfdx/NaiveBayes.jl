@@ -1,5 +1,6 @@
 using Random
 using LinearAlgebra
+using SparseArrays
 
 kde_names(m::HybridNB) = collect(keys(m.c_kdes[m.classes[1]]))
 discrete_names(m::HybridNB) = collect(keys(m.c_discrete[m.classes[1]]))

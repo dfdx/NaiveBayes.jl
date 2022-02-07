@@ -16,8 +16,8 @@ const VectorDiscrete = Union{Vector{N}, SparseVector{N, Int}} where {N <: Number
 const VectorContinuous = Union{Vector{F}, SparseVector{F, Int}} where {F <: AbstractFloat}
 const MatrixDiscrete = Union{Matrix{N}, SparseMatrixCSC{N, Int}} where {N <: Number}
 const MatrixContinuous = Union{Matrix{F}, SparseMatrixCSC{F, Int}} where {F <: AbstractFloat}
-const FeaturesDiscrete = Union{Dict{A, Vector{N}}, Dict{A, SparseVector{N, Int}}} where {N <: Number, A}
-const FeaturesContinuous = Union{Dict{A, Vector{F}}, Dict{A, SparseVector{F, Int}}} where {F <: AbstractFloat, A}
+const FeaturesDiscrete{N, T} = Union{Dict{T, Vector{N}}, Dict{T, SparseVector{N, Int}}} where {N <: Number, T}
+const FeaturesContinuous{F, T} = Union{Dict{T, Vector{F}}, Dict{T, SparseVector{F, Int}}} where {F <: AbstractFloat, T}
 
 #####################################
 #####  Multinomial Naive Bayes  #####
