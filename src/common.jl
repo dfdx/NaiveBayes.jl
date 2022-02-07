@@ -6,7 +6,7 @@
 
 convert a dictionary of vectors into a matrix
 """
-function to_matrix(V::FeaturesDiscrete) where {T <: Number, N}
+function to_matrix(V::FeaturesDiscrete)
     n_features = length(V)
     n_features < 1  && throw(ArgumentError("Empty input"))
     X = zeros(n_features, length(V[collect(keys(V))[1]]))
@@ -22,7 +22,7 @@ end
 
 Restructure a matrix as vector of vectors
 """
-function restructure_matrix(M::AbstractMatrix{T}) where {T <: Number}
+function restructure_matrix(M::AbstractMatrix{<:Number})
     d, n = size(M)
     V = Dict(Symbol("x$i") => vec(M[i, :]) for i = 1:d)
 
@@ -41,7 +41,7 @@ function logprob_c(m::NBModel, c::C) where C
 end
 
 """Predict log probabilities for all classes"""
-function predict_logprobs(m::NBModel, x::AbstractVector{V}) where {V<:Number}
+function predict_logprobs(m::NBModel, x::AbstractVector{<:Number})
     C = eltype(keys(m.c_counts))
     logprobs = Dict{C, Float64}()
     for c in keys(m.c_counts)
@@ -51,7 +51,7 @@ function predict_logprobs(m::NBModel, x::AbstractVector{V}) where {V<:Number}
 end
 
 """Predict log probabilities for all classes"""
-function predict_logprobs(m::NBModel, X::AbstractMatrix{V}) where {V<:Number}
+function predict_logprobs(m::NBModel, X::AbstractMatrix{<:Number})
     C = eltype(keys(m.c_counts))
     logprobs_per_class = Dict{C, Vector{Float64}}()
     for c in keys(m.c_counts)
@@ -62,7 +62,7 @@ function predict_logprobs(m::NBModel, X::AbstractMatrix{V}) where {V<:Number}
 end
 
 """Predict logprobs, return tuples of predicted class and its logprob"""
-function predict_proba(m::NBModel, X::AbstractMatrix{V}) where {V<:Number}
+function predict_proba(m::NBModel, X::AbstractMatrix{<:Number})
     C = eltype(keys(m.c_counts))
     classes, logprobs = predict_logprobs(m, X)
     predictions = Array{Tuple{C, Float64}}(undef, size(X, 2))
@@ -75,6 +75,6 @@ function predict_proba(m::NBModel, X::AbstractMatrix{V}) where {V<:Number}
     return predictions
 end
 
-function predict(m::NBModel, X::AbstractMatrix{V}) where {V<:Number}
+function predict(m::NBModel, X::AbstractMatrix{<:Number})
     return [k for (k,v) in predict_proba(m, X)]
 end
