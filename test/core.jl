@@ -107,6 +107,7 @@ end
         blue = [4 1 2 3 2]
         green = [0 2 0 6 1]
         X = vcat(red, blue, green)
+        X_sparse = sparse(X)
 
         # gender of author:
         y = [:m, :f, :m, :f, :m]
@@ -144,6 +145,7 @@ end
         blue = [1 2]
         green = [1 3]
         Xnew = vcat(red, blue, green)
+        Xnew_sparse = sparse(Xnew)
 
         # now get NaiveBayes.jl  predictions:
         model = MultinomialNB([:m, :f], 3, alpha=1)
@@ -163,6 +165,15 @@ end
         @test m(Xnew[:,2]...) ≈ probs_m[2]
         @test f(Xnew[:,1]...) ≈ probs_f[1]
         @test f(Xnew[:,2]...) ≈ probs_f[2]
+
+        # test with sparse
+        model_sparse = MultinomialNB([:m, :f], 3, alpha=1)
+        fit(model_sparse, X_sparse, y)
+
+        @test m(Xnew_sparse[:,1]...) ≈ probs_m[1]
+        @test m(Xnew_sparse[:,2]...) ≈ probs_m[2]
+        @test f(Xnew_sparse[:,1]...) ≈ probs_f[1]
+        @test f(Xnew_sparse[:,2]...) ≈ probs_f[2]
 
     end
 

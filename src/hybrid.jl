@@ -6,9 +6,9 @@ using LinearAlgebra
 Train NB model with discrete and continuous features by estimating P(x⃗|c)
 """
 function fit(model::HybridNB, 
-	     continuous_features::Dict{N, Vector{T}}, 
-	     discrete_features::Dict{N, Vector{U}}, 
-	     labels::Vector{C}) where{C, T <: AbstractFloat, U <: Integer, N}
+	     continuous_features::FeaturesContinuous, 
+	     discrete_features::FeaturesDiscrete, 
+	     labels::Vector{C}) where{C, N}
 
     A = 1.0/float(length(labels))
     for class in model.classes
@@ -30,9 +30,9 @@ end
     train(HybridNB, continuous, discrete, labels) -> model2
 """
 function train(::Type{HybridNB}, 
-	       continuous_features::Dict{N, Vector{T}}, 
-	       discrete_features::Dict{N, Vector{U}}, 
-	       labels::Vector{C}) where{C, T<: AbstractFloat, U <: Integer, N}
+            continuous_features::FeaturesContinuous, 
+            discrete_features::FeaturesDiscrete,
+	        labels::Vector{C}) where{C, N}
     return fit(HybridNB(labels, N), continuous_features, discrete_features, labels)
 end
 
@@ -43,8 +43,8 @@ end
 Train NB model with continuous features only
 """
 function fit(model::HybridNB, 
-	     continuous_features::Matrix{T}, 
-	     labels::Vector{C}) where{C, T<: AbstractFloat}
+	     continuous_features::MatrixContinuous, 
+	     labels::Vector{C}) where{C}
     discrete_features = Dict{Symbol, Vector{Int64}}()
     return fit(model, restructure_matrix(continuous_features), discrete_features, labels)
 end
@@ -54,8 +54,8 @@ end
 function sum_log_x_given_c!(class_prob::Vector{Float64}, 
 			    feature_prob::Vector{Float64}, 
 			    m::HybridNB, 
-			    continuous_features::Dict{N, Vector{T}}, 
-			    discrete_features::Dict{N, Vector{U}}, c) where{T <: AbstractFloat, U <: Integer, N}
+			    continuous_features::FeaturesContinuous, 
+	            discrete_features::FeaturesDiscrete, c) where{N}
     for i = 1:num_samples(m, continuous_features, discrete_features)
         for (j, name) in enumerate(keys(continuous_features))
             x_i = continuous_features[name][i]
@@ -74,8 +74,8 @@ end
 
 """ compute the number of samples """
 function num_samples(m::HybridNB, 
-		     continuous_features::Dict{N, Vector{T}}, 
-		     discrete_features::Dict{N, Vector{U}}) where{T <: AbstractFloat, U <: Integer, N}
+            continuous_features::FeaturesContinuous, 
+            discrete_features::FeaturesDiscrete)
     if length(keys(continuous_features)) > 0
         return length(continuous_features[collect(keys(continuous_features))[1]])
     end
@@ -92,8 +92,8 @@ end
 Return the log-probabilities for each column of X, where each row is the class
 """
 function predict_logprobs(m::HybridNB, 
-			  continuous_features::Dict{N, Vector{T}}, 
-			  discrete_features::Dict{N, Vector{U}}) where{T <: AbstractFloat, U <: Integer, N}
+            continuous_features::FeaturesContinuous, 
+            discrete_features::FeaturesDiscrete)
     n_samples = num_samples(m, continuous_features, discrete_features)
     log_probs_per_class = zeros(length(m.classes) ,n_samples)
     feature_prob = Vector{Float64}(undef, num_kdes(m) + num_discrete(m))
@@ -113,7 +113,8 @@ Predict log-probabilities for the input features.
 Returns tuples of predicted class and its log-probability estimate.
 """
 function predict_proba(m::HybridNB, 
-		       continuous_features::Dict{N, Vector{T}}, discrete_features::Dict{N, Vector{U}}) where{T <: AbstractFloat, U <: Integer, N}
+            continuous_features::FeaturesContinuous, 
+            discrete_features::FeaturesDiscrete)
     logprobs = predict_logprobs(m, continuous_features, discrete_features)
     n_samples = num_samples(m, continuous_features, discrete_features)
     predictions = Array{Tuple{eltype(m.classes), Float64}}(undef, n_samples)
@@ -127,10 +128,10 @@ function predict_proba(m::HybridNB,
 end
 
 """ Predict kde naive bayes for continuos featuers only""" # TODO: remove this
-function predict(m::HybridNB, X::Matrix{T}) where {T <: Number}
-    eltype(X) <: AbstractFloat || throw("Continuous features must be floats!")
-    return predict(m, restructure_matrix(X), Dict{Symbol, Vector{Int}}())
-end
+# function predict(m::HybridNB, X::MatrixDiscrete)
+#     eltype(X) <: AbstractFloat || throw("Continuous features must be floats!")
+#     return predict(m, restructure_matrix(X), Dict{Symbol, Vector{Int}}())
+# end
 
 """
     predict(m::HybridNB, f_c::Vector{Vector{Float64}}, f_d::Vector{Vector{Int64}}) -> labels
@@ -138,8 +139,8 @@ end
 Predict hybrid naive bayes for continuos featuers only
 """
 function predict(m::HybridNB, 
-		 continuous_features::Dict{N, Vector{T}}, 
-		 discrete_features::Dict{N, Vector{U}}) where  {T <: AbstractFloat, U <: Integer, N}
+            continuous_features::FeaturesContinuous, 
+            discrete_features::FeaturesDiscrete)
     return [k for (k,v) in predict_proba(m, continuous_features, discrete_features)]
 end
 

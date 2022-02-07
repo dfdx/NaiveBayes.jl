@@ -1,4 +1,4 @@
-function fit(m::MultinomialNB, X::Matrix{Int64}, y::Vector{C}) where C
+function fit(m::MultinomialNB, X::MatrixDiscrete, y::Vector{C}) where C
     ensure_data_size(X, y)
     for j=1:size(X, 2)
         c = y[j]
@@ -11,7 +11,7 @@ function fit(m::MultinomialNB, X::Matrix{Int64}, y::Vector{C}) where C
 end
 
 """Calculate log P(x|C)"""
-function logprob_x_given_c(m::MultinomialNB, x::Vector{Int64}, c::C) where C
+function logprob_x_given_c(m::MultinomialNB, x::VectorDiscrete, c::C) where C
     x_priors_for_c = m.x_counts[c] ./ sum(m.x_counts[c])
     x_probs_given_c = x_priors_for_c .^ x
     logprob = sum(log(x_probs_given_c))
@@ -19,7 +19,7 @@ function logprob_x_given_c(m::MultinomialNB, x::Vector{Int64}, c::C) where C
 end
 
 """Calculate log P(x|C)"""
-function logprob_x_given_c(m::MultinomialNB, X::Matrix{Int64}, c::C) where C
+function logprob_x_given_c(m::MultinomialNB, X::MatrixDiscrete, c::C) where C
     x_priors_for_c = m.x_counts[c] ./ sum(m.x_counts[c])
     x_probs_given_c = x_priors_for_c .^ X
     logprob = sum(log.(x_probs_given_c), dims=1)

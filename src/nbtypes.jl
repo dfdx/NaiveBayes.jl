@@ -11,6 +11,14 @@ Inherited classes should have at least following fields:
 """
 abstract type NBModel{C} end
 
+# type alias for matricies
+const VectorDiscrete = Union{Vector{N}, SparseVector{N, Int}} where {N <: Number}
+const VectorContinuous = Union{Vector{F}, SparseVector{F, Int}} where {F <: AbstractFloat}
+const MatrixDiscrete = Union{Matrix{N}, SparseMatrixCSC{N, Int}} where {N <: Number}
+const MatrixContinuous = Union{Matrix{F}, SparseMatrixCSC{F, Int}} where {F <: AbstractFloat}
+const FeaturesDiscrete = Union{Dict{A, Vector{N}}, Dict{A, SparseVector{N, Int}}} where {N <: Number, A}
+const FeaturesContinuous = Union{Dict{A, Vector{F}}, Dict{A, SparseVector{F, Int}}} where {F <: AbstractFloat, A}
+
 #####################################
 #####  Multinomial Naive Bayes  #####
 #####################################

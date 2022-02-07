@@ -6,6 +6,7 @@ using KernelDensity
 using Interpolations
 using LinearAlgebra
 using StatsBase
+using SparseArrays
 import StatsBase: fit, predict
 
 export  NBModel,
