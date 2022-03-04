@@ -1,6 +1,8 @@
 NaiveBayes.jl
 =============
 
+> :warning: This is a low-maintenance package, please do not expect any major changes or quick bug fixes. 
+
 [![Build Status](https://travis-ci.org/dfdx/NaiveBayes.jl.svg)](https://travis-ci.org/dfdx/NaiveBayes.jl)
 [![codecov.io](http://codecov.io/github/dfdx/NaiveBayes.jl/coverage.svg)](http://codecov.io/github/dfdx/NaiveBayes.jl)
 
@@ -23,20 +25,20 @@ As a subproduct, this package also provides a `DataStats` type that may be used 
     f_c1 = randn(10)
     f_c2 = randn(10)
     f_d1 = rand(1:5, 10)
-    f_d2 = randn(3:7, 10)
+    f_d2 = rand(3:7, 10)
     training_features_continuous = Dict{Symbol, Vector{Float64}}(:c1=>f_c1, :c2=>f_c2)
     training_features_discrete   = Dict{Symbol, Vector{Int}}(:d1=>f_d1, :d2=>f_d2) #discrete features as Int64
+
+    labels = rand(1:3, 10)
 
     hybrid_model = HybridNB(labels)
 
     # train the model
     fit(hybrid_model, training_features_continuous, training_features_discrete, labels)
-    # predict the classification for new events (points): features_c, features_d
-    y = predict(hybrid_model, features_c, features_d)
-    ```
-    Alternatively one can skip declaring the model and train it directly:
-    ```julia
-    model = train(HybridNB, training_features_continuous, training_features_discrete, labels)
+
+    # predict the classification for new events (points): features_c, features_d    
+    features_c = Dict{Symbol, Vector{Float64}}(:c1=>randn(10), :c2=>randn(10))
+    features_d = Dict{Symbol, Vector{Int}}(:d1=>rand(1:5, 10), :d2=>rand(3:7, 10))
     y = predict(hybrid_model, features_c, features_d)
     ```
 
