@@ -5,9 +5,9 @@ using LinearAlgebra
 
 Train NB model with discrete and continuous features by estimating P(x⃗|c)
 """
-function fit(model::HybridNB, 
-	     continuous_features::FeaturesContinuous{F, T}, 
-	     discrete_features::FeaturesDiscrete{N, T}, 
+function fit(model::HybridNB,
+	     continuous_features::FeaturesContinuous{F, T},
+	     discrete_features::FeaturesDiscrete{N, T},
 	     labels::Vector{C}) where{C, N, T, F}
 
     A = 1.0/float(length(labels))
@@ -29,9 +29,9 @@ end
 """
     train(HybridNB, continuous, discrete, labels) -> model2
 """
-function train(::Type{HybridNB}, 
-        continuous_features::FeaturesContinuous{F, T}, 
-        discrete_features::FeaturesDiscrete{N, T}, 
+function train(::Type{HybridNB},
+        continuous_features::FeaturesContinuous{F, T},
+        discrete_features::FeaturesDiscrete{N, T},
         labels::Vector{C}) where{C, N, T, F}
     return fit(HybridNB(labels, T), continuous_features, discrete_features, labels)
 end
@@ -42,8 +42,8 @@ end
 
 Train NB model with continuous features only
 """
-function fit(model::HybridNB, 
-	     continuous_features::MatrixContinuous, 
+function fit(model::HybridNB,
+	     continuous_features::MatrixContinuous,
 	     labels::Vector{C}) where{C}
     discrete_features = Dict{Symbol, Vector{Int64}}()
     return fit(model, restructure_matrix(continuous_features), discrete_features, labels)
@@ -51,10 +51,10 @@ end
 
 
 """computes log[P(x⃗ⁿ|c)] ≈ ∑ᵢ log[p(xⁿᵢ|c)] """
-function sum_log_x_given_c!(class_prob::Vector{Float64}, 
-			    feature_prob::Vector{Float64}, 
-			    m::HybridNB, 
-			    continuous_features::FeaturesContinuous, 
+function sum_log_x_given_c!(class_prob::Vector{Float64},
+			    feature_prob::Vector{Float64},
+			    m::HybridNB,
+			    continuous_features::FeaturesContinuous,
 	            discrete_features::FeaturesDiscrete, c)
     for i = 1:num_samples(m, continuous_features, discrete_features)
         for (j, name) in enumerate(keys(continuous_features))
@@ -73,8 +73,8 @@ end
 
 
 """ compute the number of samples """
-function num_samples(m::HybridNB, 
-            continuous_features::FeaturesContinuous, 
+function num_samples(m::HybridNB,
+            continuous_features::FeaturesContinuous,
             discrete_features::FeaturesDiscrete)
     if length(keys(continuous_features)) > 0
         return length(continuous_features[collect(keys(continuous_features))[1]])
@@ -91,8 +91,8 @@ end
 
 Return the log-probabilities for each column of X, where each row is the class
 """
-function predict_logprobs(m::HybridNB, 
-            continuous_features::FeaturesContinuous, 
+function predict_logprobs(m::HybridNB,
+            continuous_features::FeaturesContinuous,
             discrete_features::FeaturesDiscrete)
     n_samples = num_samples(m, continuous_features, discrete_features)
     log_probs_per_class = zeros(length(m.classes) ,n_samples)
@@ -112,8 +112,8 @@ end
 Predict log-probabilities for the input features.
 Returns tuples of predicted class and its log-probability estimate.
 """
-function predict_proba(m::HybridNB, 
-            continuous_features::FeaturesContinuous, 
+function predict_proba(m::HybridNB,
+            continuous_features::FeaturesContinuous,
             discrete_features::FeaturesDiscrete)
     logprobs = predict_logprobs(m, continuous_features, discrete_features)
     n_samples = num_samples(m, continuous_features, discrete_features)
@@ -137,8 +137,8 @@ end
 
 Predict hybrid naive bayes for continuous features only
 """
-function predict(m::HybridNB, 
-            continuous_features::FeaturesContinuous, 
+function predict(m::HybridNB,
+            continuous_features::FeaturesContinuous,
             discrete_features::FeaturesDiscrete)
     return [k for (k,v) in predict_proba(m, continuous_features, discrete_features)]
 end

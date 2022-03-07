@@ -1,7 +1,11 @@
 NaiveBayes.jl
 =============
 
-> :warning: This is a low-maintenance package, please do not expect any major changes or quick bug fixes. 
+> :warning: This package has been created years ago and has never been modernized. Its usage
+> is restricted to concrete types (e.g. `Vector{Float64}` instead of `AbstractVector{<:Real}`).
+> The API is inconsistent and sometimes confusing.
+> [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl) wraps NaiveBayes.jl, fixing some of
+> these issues, but ghosts of the past still show up. You have been warned!
 
 [![Build Status](https://travis-ci.org/dfdx/NaiveBayes.jl.svg)](https://travis-ci.org/dfdx/NaiveBayes.jl)
 [![codecov.io](http://codecov.io/github/dfdx/NaiveBayes.jl/coverage.svg)](http://codecov.io/github/dfdx/NaiveBayes.jl)
@@ -36,7 +40,7 @@ As a subproduct, this package also provides a `DataStats` type that may be used 
     # train the model
     fit(hybrid_model, training_features_continuous, training_features_discrete, labels)
 
-    # predict the classification for new events (points): features_c, features_d    
+    # predict the classification for new events (points): features_c, features_d
     features_c = Dict{Symbol, Vector{Float64}}(:c1=>randn(10), :c2=>randn(10))
     features_d = Dict{Symbol, Vector{Int}}(:d1=>rand(1:5, 10), :d2=>rand(3:7, 10))
     y = predict(hybrid_model, features_c, features_d)

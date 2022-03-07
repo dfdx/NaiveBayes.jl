@@ -1,4 +1,4 @@
-function fit(m::GaussianNB, X::MatrixContinuous, y::Vector{C}) where C
+function fit(m::GaussianNB, X::MatrixContinuous, y::AbstractVector{C}) where C
     ensure_data_size(X, y)
     # updatestats(m.dstats, X)
     # m.gaussian = MvNormal(mean(m.dstats), cov(m.dstats))
