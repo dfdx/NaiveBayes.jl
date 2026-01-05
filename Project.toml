@@ -1,7 +1,7 @@
 name = "NaiveBayes"
 uuid = "9bbee03b-0db5-5f46-924f-b5c9c21b8c60"
 authors = ["Anthony D. Blaom <anthony.blaom@gmail.com>"]
-version = "0.4.1"
+version = "0.5.6"
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
@@ -10,12 +10,13 @@ Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 KernelDensity = "5ab0869b-81aa-558d-bb23-cbf5423bbe9b"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 Distributions = "0.23.12, 0.24, 0.25"
 HDF5 = "0.15, 0.16, 0.17"
-Interpolations = "0.12.10, 0.16"
+Interpolations = "0.16"
 KernelDensity = "^0.6.0"
 StatsBase = "0.33.1, 0.34"
 julia = "1.10"

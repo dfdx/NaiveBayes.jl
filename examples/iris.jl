@@ -2,12 +2,14 @@
 using NaiveBayes
 using RDatasets
 using StatsBase
+using Random
+
 
 # Example 1
 iris = dataset("datasets", "iris")
 
 # observations in columns and variables in rows
-X = convert(Array, iris[:, 1:4])'
+X = Matrix(iris[:,1:4])'
 p, n = size(X)
 # by default species is a PooledDataArray,
 y = [species for species in iris[:, 5]]
@@ -16,13 +18,13 @@ y = [species for species in iris[:, 5]]
 train_frac = 0.9
 k = floor(Int, train_frac * n)
 idxs = randperm(n)
-train = idxs[1:k]
-test = idxs[k+1:end]
+train_idxs = idxs[1:k]
+test_idxs = idxs[k+1:end]
 
 model = GaussianNB(unique(y), p)
-fit(model, X[:, train], y[train])
+fit(model, X[:, train_idxs], y[train_idxs])
 
-accuracy = countnz(predict(model, X[:,test]) .== y[test]) / countnz(test)
+accuracy = count(!iszero, predict(model, X[:,test_idxs]) .== y[test_idxs]) / count(!iszero, test_idxs)
 println("Accuracy: $accuracy")
 
 # Example 2

@@ -1,14 +1,14 @@
-using LinearAlgebra 
+using LinearAlgebra
 
 """
     fit(m::HybridNB, f_c::Vector{Vector{Float64}}, f_d::Vector{Vector{Int64}}, labels::Vector{Int64})
 
 Train NB model with discrete and continuous features by estimating P(x⃗|c)
 """
-function fit(model::HybridNB, 
-	     continuous_features::Dict{N, Vector{T}}, 
-	     discrete_features::Dict{N, Vector{U}}, 
-	     labels::Vector{C}) where{C, T <: AbstractFloat, U <: Integer, N}
+function fit(model::HybridNB,
+	     continuous_features::FeaturesContinuous{F, T},
+	     discrete_features::FeaturesDiscrete{N, T},
+	     labels::Vector{C}) where{C, N, T, F}
 
     A = 1.0/float(length(labels))
     for class in model.classes
@@ -16,7 +16,7 @@ function fit(model::HybridNB,
         model.priors[class] = A*float(length(inds))
         for (name, feature) in continuous_features
             f_data = feature[inds]
-            model.c_kdes[class][name] = InterpKDE(kde(f_data[isfinite.(f_data)]), eps(Float64),  BSpline(Linear()), OnGrid())
+            model.c_kdes[class][name] = InterpKDE(kde(f_data[isfinite.(f_data)]), eps(Float64),  BSpline(Linear()))
         end
         for (name, feature) in discrete_features
             f_data = feature[inds]
@@ -29,11 +29,11 @@ end
 """
     train(HybridNB, continuous, discrete, labels) -> model2
 """
-function train(::Type{HybridNB}, 
-	       continuous_features::Dict{N, Vector{T}}, 
-	       discrete_features::Dict{N, Vector{U}}, 
-	       labels::Vector{C}) where{C, T<: AbstractFloat, U <: Integer, N}
-    return fit(HybridNB(labels, N), continuous_features, discrete_features, labels)
+function train(::Type{HybridNB},
+        continuous_features::FeaturesContinuous{F, T},
+        discrete_features::FeaturesDiscrete{N, T},
+        labels::Vector{C}) where{C, N, T, F}
+    return fit(HybridNB(labels, T), continuous_features, discrete_features, labels)
 end
 
 
@@ -42,20 +42,20 @@ end
 
 Train NB model with continuous features only
 """
-function fit(model::HybridNB, 
-	     continuous_features::Matrix{T}, 
-	     labels::Vector{C}) where{C, T<: AbstractFloat}
+function fit(model::HybridNB,
+	     continuous_features::MatrixContinuous,
+	     labels::Vector{C}) where{C}
     discrete_features = Dict{Symbol, Vector{Int64}}()
     return fit(model, restructure_matrix(continuous_features), discrete_features, labels)
 end
 
 
 """computes log[P(x⃗ⁿ|c)] ≈ ∑ᵢ log[p(xⁿᵢ|c)] """
-function sum_log_x_given_c!(class_prob::Vector{Float64}, 
-			    feature_prob::Vector{Float64}, 
-			    m::HybridNB, 
-			    continuous_features::Dict{N, Vector{T}}, 
-			    discrete_features::Dict{N, Vector{U}}, c) where{T <: AbstractFloat, U <: Integer, N}
+function sum_log_x_given_c!(class_prob::Vector{Float64},
+			    feature_prob::Vector{Float64},
+			    m::HybridNB,
+			    continuous_features::FeaturesContinuous,
+	            discrete_features::FeaturesDiscrete, c)
     for i = 1:num_samples(m, continuous_features, discrete_features)
         for (j, name) in enumerate(keys(continuous_features))
             x_i = continuous_features[name][i]
@@ -73,9 +73,9 @@ end
 
 
 """ compute the number of samples """
-function num_samples(m::HybridNB, 
-		     continuous_features::Dict{N, Vector{T}}, 
-		     discrete_features::Dict{N, Vector{U}}) where{T <: AbstractFloat, U <: Integer, N}
+function num_samples(m::HybridNB,
+            continuous_features::FeaturesContinuous,
+            discrete_features::FeaturesDiscrete)
     if length(keys(continuous_features)) > 0
         return length(continuous_features[collect(keys(continuous_features))[1]])
     end
@@ -91,9 +91,9 @@ end
 
 Return the log-probabilities for each column of X, where each row is the class
 """
-function predict_logprobs(m::HybridNB, 
-			  continuous_features::Dict{N, Vector{T}}, 
-			  discrete_features::Dict{N, Vector{U}}) where{T <: AbstractFloat, U <: Integer, N}
+function predict_logprobs(m::HybridNB,
+            continuous_features::FeaturesContinuous,
+            discrete_features::FeaturesDiscrete)
     n_samples = num_samples(m, continuous_features, discrete_features)
     log_probs_per_class = zeros(length(m.classes) ,n_samples)
     feature_prob = Vector{Float64}(undef, num_kdes(m) + num_discrete(m))
@@ -112,8 +112,9 @@ end
 Predict log-probabilities for the input features.
 Returns tuples of predicted class and its log-probability estimate.
 """
-function predict_proba(m::HybridNB, 
-		       continuous_features::Dict{N, Vector{T}}, discrete_features::Dict{N, Vector{U}}) where{T <: AbstractFloat, U <: Integer, N}
+function predict_proba(m::HybridNB,
+            continuous_features::FeaturesContinuous,
+            discrete_features::FeaturesDiscrete)
     logprobs = predict_logprobs(m, continuous_features, discrete_features)
     n_samples = num_samples(m, continuous_features, discrete_features)
     predictions = Array{Tuple{eltype(m.classes), Float64}}(undef, n_samples)
@@ -126,20 +127,19 @@ function predict_proba(m::HybridNB,
     return predictions
 end
 
-""" Predict kde naive bayes for continuos featuers only""" # TODO: remove this
-function predict(m::HybridNB, X::Matrix{T}) where {T <: Number}
-    eltype(X) <: AbstractFloat || throw("Continuous features must be floats!")
+""" Predict kde naive bayes for continuos featuers only"""
+function predict(m::HybridNB, X::MatrixContinuous)
     return predict(m, restructure_matrix(X), Dict{Symbol, Vector{Int}}())
 end
 
 """
     predict(m::HybridNB, f_c::Vector{Vector{Float64}}, f_d::Vector{Vector{Int64}}) -> labels
 
-Predict hybrid naive bayes for continuos featuers only
+Predict hybrid naive bayes for continuous features only
 """
-function predict(m::HybridNB, 
-		 continuous_features::Dict{N, Vector{T}}, 
-		 discrete_features::Dict{N, Vector{U}}) where  {T <: AbstractFloat, U <: Integer, N}
+function predict(m::HybridNB,
+            continuous_features::FeaturesContinuous,
+            discrete_features::FeaturesDiscrete)
     return [k for (k,v) in predict_proba(m, continuous_features, discrete_features)]
 end
 
@@ -152,10 +152,8 @@ function InterpKDE(kde::UnivariateKDE, extrap::Union{ExtrapDimSpec, Number}, opt
     itp = Interpolations.scale(itp_u, kde.x)
     InterpKDE{typeof(kde),typeof(itp)}(kde, itp)
 end
-InterpKDE(kde::UnivariateKDE) = InterpKDE(kde, NaN, BSpline(Quadratic(Line())), OnGrid())
 
-
-function write_model(model::HybridNB, filename::S) where {S <: AbstractString}
+function write_model(model::HybridNB, filename::AbstractString)
     h5open(filename, "w") do f
         name_type = eltype(keys(model.c_kdes[model.classes[1]]))
         f["NameType"] = "$name_type"
@@ -182,14 +180,14 @@ function write_model(model::HybridNB, filename::S) where {S <: AbstractString}
 end
 
 
-function to_range(y::Vector{T}) where {T <: Number}
+function to_range(y::Vector{<:Number})
     min, max = extrema(y)
     dy = (max-min)/(length(y)-1)
     return min:dy:max
 end
 
 
-function load_model(filename::S) where {S <: AbstractString}
+function load_model(filename::AbstractString)
     model = h5open(filename, "r") do f
         N = read(f["NameType"]) == "Symbol" ? Symbol : AbstractString
         fnc = N == AbstractString ? string : Symbol
@@ -202,7 +200,7 @@ function load_model(filename::S) where {S <: AbstractString}
             priors[c] = read(f["$c"]["Prior"])
             kdes[c] = Dict{N, InterpKDE}()
             for (name, dist) in read(f["$c"]["Continuous"])
-                kdes[c][fnc(name)] = InterpKDE(UnivariateKDE(to_range(dist["x"]), dist["density"]), eps(Float64), BSpline(Linear()), OnGrid())
+                kdes[c][fnc(name)] = InterpKDE(UnivariateKDE(to_range(dist["x"]), dist["density"]), eps(Float64), BSpline(Linear()))
             end
             discrete[c] = Dict{N, ePDF}()
             for (name, dist) in read(f["$c"]["Discrete"])
