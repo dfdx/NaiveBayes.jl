@@ -13,7 +13,6 @@ export  NBModel,
         MultinomialNB,
         GaussianNB,
         KernelNB,
-        HybridNB,
         fit,
         predict,
         predict_proba,
@@ -27,7 +26,6 @@ export  NBModel,
 
 include("nbtypes.jl")
 include("common.jl")
-include("hybrid.jl")
 include("gaussian.jl")
 include("multinomial.jl")
 
